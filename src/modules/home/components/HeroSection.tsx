@@ -30,9 +30,9 @@ export function HeroSection() {
         {/* Full Background Villa Image on Right */}
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none flex items-center justify-end">
           <picture className="w-full h-full">
-            <source srcSet="/images/home-hero-villa-hd.webp" type="image/webp" />
+            <source srcSet={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/home-hero-villa-hd.webp`} type="image/webp" />
             <img
-              src="/images/home-hero-villa-hd.png"
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/home-hero-villa-hd.png`}
               alt="Design Nayan Modern Architectural Residence Background"
               className="w-full h-full object-cover object-right-bottom lg:object-right"
               loading="eager"
@@ -175,9 +175,9 @@ export function HeroSection() {
         {/* Full Villa Photo Rendered in Full Landscape Frame */}
         <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden shadow-xl border border-neutral-100/90 bg-neutral-50">
           <picture className="w-full h-full">
-            <source srcSet="/images/home-hero-villa-hd.webp" type="image/webp" />
+            <source srcSet={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/home-hero-villa-hd.webp`} type="image/webp" />
             <img
-              src="/images/home-hero-villa-hd.png"
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/home-hero-villa-hd.png`}
               alt="Design Nayan Modern Architectural Villa"
               className="w-full h-full object-cover object-right-bottom"
               loading="eager"
