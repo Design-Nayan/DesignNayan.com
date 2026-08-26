@@ -30,54 +30,26 @@ export function Testimonials() {
   };
 
   return (
-    <section className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white border-t border-neutral-100 select-none">
+    <section className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-neutral-50/50">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-end justify-between mb-6 sm:mb-10 lg:mb-14 gap-4">
+        
+        {/* Section Header */}
+        <div className="flex items-end justify-between mb-8 sm:mb-12 lg:mb-16 gap-4">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-rose-600 uppercase block mb-1.5 sm:mb-2 font-mono">
-              WHAT CLIENTS SAY
+              TESTIMONIALS
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight">
-              Trusted By People. <span className="text-rose-600">Proven By Results.</span>
+              What Our <span className="text-rose-600">Clients Say</span>
             </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Desktop Only Navigation Arrows */}
-            <div className="hidden 2xl:flex items-center gap-1.5">
-              <button
-                onClick={() => scroll("left")}
-                className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
-                aria-label="Previous testimonial"
-              >
-                <ChevronLeft className="w-4 h-4 text-rose-600" />
-              </button>
-              <button
-                onClick={() => scroll("right")}
-                className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
-                aria-label="Next testimonial"
-              >
-                <ChevronRight className="w-4 h-4 text-rose-600" />
-              </button>
-            </div>
-
-            {/* Desktop View All Reviews Link */}
-            <Link
-              href="/testimonials"
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-600 hover:text-rose-700 transition-colors"
-            >
-              <span>All Reviews</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
         </div>
 
-        {/* Testimonials Cards: Beautiful Left Margin Spacing & Compact Mobile Card Sizing */}
+        {/* Testimonials Cards */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex 2xl:grid 2xl:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8 overflow-x-auto no-scrollbar snap-x-mandatory touch-pan-x -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
+          className="flex 2xl:grid 2xl:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
         >
           {testimonials.map((item) => (
             <div

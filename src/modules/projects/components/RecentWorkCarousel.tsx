@@ -33,7 +33,7 @@ export function RecentWorkCarousel() {
   };
 
   return (
-    <section id="portfolio" className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white select-none">
+    <section id="portfolio" className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         
         {/* Header Row */}
@@ -81,7 +81,7 @@ export function RecentWorkCarousel() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex 2xl:grid 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory touch-pan-x -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
+          className="flex 2xl:grid 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
         >
           {projectsData.map((project) => (
             <div

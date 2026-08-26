@@ -30,7 +30,7 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-neutral-50/50 select-none">
+    <section className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-neutral-50/50">
       <div className="max-w-7xl mx-auto">
         
         {/* Section Header */}
@@ -67,7 +67,7 @@ export function TestimonialsSection() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex 2xl:grid 2xl:grid-cols-3 gap-3.5 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory touch-pan-x -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
+          className="flex 2xl:grid 2xl:grid-cols-3 gap-3.5 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
         >
           {testimonialsData.slice(0, 5).map((testimonial) => (
             <div

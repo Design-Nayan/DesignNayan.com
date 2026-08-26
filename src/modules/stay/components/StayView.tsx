@@ -85,7 +85,7 @@ export function StayView() {
   };
 
   return (
-    <div className="min-h-screen bg-white select-none pb-20 font-sans">
+    <div className="min-h-screen bg-white pb-20 font-sans">
       
       {/* 1. Page Header & Hero Search */}
       <section className="bg-neutral-950 text-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
@@ -187,7 +187,7 @@ export function StayView() {
 
         <div
           ref={rentalsScrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory touch-pan-x -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
         >
           {topRentals.map((rental) => (
             <div
@@ -316,7 +316,7 @@ export function StayView() {
 
         <div
           ref={staysScrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory touch-pan-x -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
         >
           {topStays.map((stay) => (
             <div
