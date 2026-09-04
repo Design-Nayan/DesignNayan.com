@@ -60,6 +60,16 @@ html {
   scroll-snap-align: center;
 }
 
+/* Crisp rendering during CSS transform/translate transitions */
+.crisp-transform {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  will-change: transform, box-shadow, border-color;
+}
+
 /* Seamless Continuous Marquee Animation (Always in Motion) */
 @keyframes marquee {
   0% {

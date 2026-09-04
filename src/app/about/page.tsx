@@ -20,7 +20,7 @@ export default function AboutPage() {
           One Ecosystem. One Unified Vision.
         </h1>
         <p className="text-neutral-600 text-base sm:text-lg leading-relaxed">
-          Headquartered in Guwahati, Assam, Design Nayan is an integrated ecosystem connecting architectural design, digital creative branding, turnkey construction, and premium stay properties.
+          Headquartered in Guwahati, Assam, Design Nayan is an integrated ecosystem connecting architectural design, digital creative branding, Nayan Constructions, and premium stay properties.
         </p>
       </div>
 
@@ -48,7 +48,7 @@ export default function AboutPage() {
             Traditional clients often face friction jumping between disparate architects, contractors, branding agencies, and suppliers.
           </p>
           <p>
-            Design Nayan brings all disciplines under one roof: from the initial 3D visualization and municipal floor plans to on-site material supply, turnkey construction, and digital marketing.
+            Design Nayan brings all disciplines under one roof: from the initial 3D visualization and municipal floor plans to on-site material supply, Nayan Constructions, and digital marketing.
           </p>
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2.5 text-sm font-semibold text-neutral-900">

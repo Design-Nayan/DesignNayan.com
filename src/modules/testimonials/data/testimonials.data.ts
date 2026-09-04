@@ -35,7 +35,7 @@ export const testimonialsData: TestimonialItem[] = [
   },
   {
     id: "t5",
-    quote: "The interior styling and turnkey execution of our duplex villa in Beltola was completely stress-free. Premium material sourcing and timely handover made all the difference.",
+    quote: "The interior styling and Nayan Constructions execution of our duplex villa in Beltola was completely stress-free. Premium material sourcing and timely handover made all the difference.",
     name: "Sunita Phukan",
     role: "Homeowner, Guwahati",
     rating: 5,

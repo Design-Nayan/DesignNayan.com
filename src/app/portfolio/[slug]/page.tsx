@@ -142,13 +142,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               Let&apos;s build your dream project together.
             </h3>
             <p className="text-xs sm:text-sm text-neutral-400 max-w-lg">
-              Get in touch with our team for custom layouts, 3D renderings, and turnkey execution.
+              Get in touch with our team for custom layouts, 3D renderings, and Nayan Constructions execution.
             </p>
           </div>
 
           <div className="flex flex-row items-center gap-2.5 sm:gap-3 w-full md:w-auto">
             <a
-              href={`https://wa.me/918638053380?text=${encodeURIComponent(
+              href={`https://wa.me/918472934031?text=${encodeURIComponent(
                 `Hi Design Nayan! I am interested in building a project similar to *${project.title}* (${project.categoryTag}).`
               )}`}
               target="_blank"

@@ -128,7 +128,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
           {/* Action Buttons: Shifted slightly up in vertical direction with comfortable clearance */}
           <div className="pt-3 sm:pt-4 pb-1 sm:pb-0 border-t border-neutral-100 flex flex-row items-center gap-2 sm:gap-3">
             <a
-              href={`https://wa.me/918638053380?text=${encodeURIComponent(
+              href={`https://wa.me/918472934031?text=${encodeURIComponent(
                 `Hi Design Nayan! I was looking at your project *${project.title}* (${project.categoryTag} in ${project.location}) in your portfolio. I would like to discuss a similar project for my space.`
               )}`}
               target="_blank"

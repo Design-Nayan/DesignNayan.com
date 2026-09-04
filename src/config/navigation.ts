@@ -22,6 +22,10 @@ export const mainNav: NavItem[] = [
     href: "/stay",
   },
   {
+    title: "CREATORS",
+    href: "/creators",
+  },
+  {
     title: "PORTFOLIO",
     href: "/portfolio",
   },
@@ -39,6 +43,7 @@ export const footerNav = [
   { title: "STUDIO", href: "/studio" },
   { title: "BUILD", href: "/build" },
   { title: "STAY", href: "/stay" },
+  { title: "CREATORS", href: "/creators" },
   { title: "PORTFOLIO", href: "/portfolio" },
   { title: "ABOUT", href: "/about" },
   { title: "CONTACT", href: "/contact" },

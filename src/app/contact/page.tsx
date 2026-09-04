@@ -9,7 +9,7 @@ export default function ContactPage() {
     name: "",
     email: "",
     phone: "",
-    serviceCategory: "Design & Architecture",
+    serviceCategory: "Branding & Creative",
     budget: "₹1 Lakh - ₹5 Lakhs",
     message: "",
   });
@@ -61,7 +61,7 @@ export default function ContactPage() {
           Let&apos;s Start Your Project
         </h1>
         <p className="text-neutral-600 text-base sm:text-lg leading-relaxed">
-          Reach out to discuss your architectural design, turnkey construction, branding, or property listing requirements.
+          Reach out to discuss your architectural design, Nayan Constructions, branding, or property listing requirements.
         </p>
       </div>
 
@@ -228,10 +228,10 @@ export default function ContactPage() {
                     onChange={(e) => setFormData({ ...formData, serviceCategory: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-300 focus:border-rose-600 focus:outline-none text-neutral-900 text-sm shadow-sm"
                   >
-                    <option value="Design & Architecture">Design & Architecture (3D, Floor Plan, Interior)</option>
-                    <option value="Build & Construction">Build & Construction (Turnkey & Materials)</option>
                     <option value="Branding & Creative">Branding & Creative (Logo, Graphics, Video)</option>
                     <option value="Digital & Marketing">Digital & Marketing (Web, UI/UX, Ads)</option>
+                    <option value="Design & Architecture">Design & Architecture (3D, Floor Plan, Interior)</option>
+                    <option value="Build & Construction">Build & Construction (Nayan Constructions & Materials)</option>
                     <option value="Stay & Property">Stay & Property Listings</option>
                   </select>
                 </div>

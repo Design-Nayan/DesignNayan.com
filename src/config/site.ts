@@ -6,11 +6,11 @@ export const siteConfig = {
   url: "https://designnayan.com",
   ogImage: "https://designnayan.com/og.png",
   contact: {
-    phone: "+91 86380 53380",
-    phoneDisplay: "+91 86380 53380",
+    phone: "+91 84729 34031",
+    phoneDisplay: "+91 84729 34031",
     email: "hello@designnayan.com",
     address: "Guwahati, Assam, India",
-    whatsapp: "https://wa.me/918638053380",
+    whatsapp: "https://wa.me/918472934031",
   },
   stats: {
     projects: "250+",
@@ -23,7 +23,7 @@ export const siteConfig = {
     instagram: "https://instagram.com/designnayan",
     facebook: "https://facebook.com/designnayan",
     linkedin: "https://linkedin.com/company/designnayan",
-    whatsapp: "https://wa.me/918638053380",
+    whatsapp: "https://wa.me/918472934031",
   },
 } as const;
 

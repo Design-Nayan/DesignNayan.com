@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { 
   Search, 
@@ -42,33 +42,70 @@ export function StayView() {
   const rentalsScrollRef = useRef<HTMLDivElement>(null);
   const staysScrollRef = useRef<HTMLDivElement>(null);
 
-  // Filter Rentals
-  const filteredRentals = rentalPropertiesNearYou.filter((rental) => {
-    const matchesSearch =
-      rental.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rental.locality.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rental.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rental.propertyType.toLowerCase().includes(searchQuery.toLowerCase());
+  // Dynamic Fuzzy Multi-keyword Matching for Rentals
+  const filteredRentals = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const words = q.split(/\s+/).filter(Boolean);
 
-    const matchesLocation =
-      selectedLocation === "All Locations" || rental.city === selectedLocation;
+    return rentalPropertiesNearYou.filter((rental) => {
+      const matchesLocation =
+        selectedLocation === "All Locations" || rental.city === selectedLocation;
+      if (!matchesLocation) return false;
 
-    return matchesSearch && matchesLocation;
-  });
+      if (!q) return true;
 
-  // Filter Vacation Stays
-  const filteredStays = vacationHomesAndHotels.filter((stay) => {
-    const matchesSearch =
-      stay.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stay.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stay.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stay.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const searchableText = [
+        rental.title,
+        rental.locality,
+        rental.city,
+        rental.propertyType,
+        rental.furnishing,
+        `${rental.bedrooms} bhk`,
+        `${rental.bedrooms} bed`,
+        `${rental.bathrooms} bath`,
+        rental.description,
+        ...rental.amenities,
+      ].join(" ").toLowerCase();
 
-    const matchesLocation =
-      selectedLocation === "All Locations" || stay.city === selectedLocation;
+      // Matches if full query appears or if any individual word matches
+      return (
+        searchableText.includes(q) ||
+        words.some((word) => searchableText.includes(word))
+      );
+    });
+  }, [searchQuery, selectedLocation]);
 
-    return matchesSearch && matchesLocation;
-  });
+  // Dynamic Fuzzy Multi-keyword Matching for Vacation Stays
+  const filteredStays = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const words = q.split(/\s+/).filter(Boolean);
+
+    return vacationHomesAndHotels.filter((stay) => {
+      const matchesLocation =
+        selectedLocation === "All Locations" || stay.city === selectedLocation;
+      if (!matchesLocation) return false;
+
+      if (!q) return true;
+
+      const searchableText = [
+        stay.title,
+        stay.location,
+        stay.city,
+        stay.category,
+        stay.tag,
+        `${stay.bedrooms} bed`,
+        `${stay.guests} guests`,
+        stay.description,
+        ...stay.amenities,
+      ].join(" ").toLowerCase();
+
+      // Matches if full query appears or if any individual word matches
+      return (
+        searchableText.includes(q) ||
+        words.some((word) => searchableText.includes(word))
+      );
+    });
+  }, [searchQuery, selectedLocation]);
 
   const topRentals = filteredRentals.slice(0, 5);
   const topStays = filteredStays.slice(0, 5);
@@ -84,65 +121,149 @@ export function StayView() {
     }
   };
 
+  // Pre-compiled popular suggestion tags
+  const popularSuggestions = [
+    { label: "1 BHK", type: "type" },
+    { label: "2 BHK", type: "type" },
+    { label: "3 BHK", type: "type" },
+    { label: "Villa", type: "type" },
+    { label: "Fully Furnished", type: "furnishing" },
+    { label: "Guwahati", type: "location" },
+    { label: "Shillong", type: "location" },
+    { label: "Boutique Hotel", type: "stay" },
+    { label: "Vacation Home", type: "stay" },
+  ];
+
+  // Dynamic Suggestions based on user query or popular options
+  const matchingSuggestions = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return [];
+
+    const pool = [
+      "1 BHK Studio",
+      "2 BHK Builder Floor",
+      "3 BHK Apartment",
+      "4 BHK Luxury Villa",
+      "Duplex Penthouse",
+      "Fully Furnished",
+      "Semi-Furnished",
+      "Boutique Hotel",
+      "Vacation Home",
+      "Luxury Resort",
+      "Architectural Homestay",
+      "Guwahati",
+      "GS Road, Guwahati",
+      "Beltola, Guwahati",
+      "Zoo Road, Guwahati",
+      "Six Mile, Guwahati",
+      "Chandmari, Guwahati",
+      "Shillong",
+      "Laitumkhrah, Shillong",
+      "Upper Shillong",
+      "Kaziranga",
+      "Jorhat",
+      "Tezpur",
+      "India",
+      "Worldwide Destinations",
+    ];
+
+    const words = q.split(/\s+/).filter(Boolean);
+    return pool.filter((item) => {
+      const itemLower = item.toLowerCase();
+      return words.some((w) => itemLower.includes(w)) || itemLower.includes(q);
+    }).slice(0, 6);
+  }, [searchQuery]);
+
   return (
     <div className="min-h-screen bg-white pb-20 font-sans">
       
-      {/* 1. Page Header & Hero Search */}
-      <section className="bg-neutral-950 text-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      {/* 1. Stylish Minimal Header & Dynamic World Search Bar (Clean White Theme) */}
+      <section className="bg-white border-b border-neutral-100 pt-8 sm:pt-12 lg:pt-16 pb-6 sm:pb-10 px-3.5 sm:px-6">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
           
-          <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
-            <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-rose-500 uppercase block font-mono">
+          {/* Header Title */}
+          <div className="text-center space-y-2">
+            <span className="text-[10px] sm:text-xs font-bold tracking-[0.25em] text-rose-600 uppercase block font-mono">
               DESIGN NAYAN STAY & DISCOVER
             </span>
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">
-              Rental Houses & <span className="text-rose-500">Hotel Stays</span>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-neutral-950 tracking-tight leading-tight">
+              Rental Houses &amp; <span className="bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 bg-clip-text text-transparent">Hotel Stays</span>
             </h1>
-            <p className="text-neutral-400 text-xs sm:text-base lg:text-lg leading-relaxed font-normal">
-              One platform for verified local rental houses and curated boutique hotels & vacation stays across Northeast India.
+            <p className="text-neutral-500 text-xs sm:text-sm md:text-base max-w-xl mx-auto font-normal">
+              Find verified rental homes, furnished apartments, boutique hotels, and vacation villas worldwide.
             </p>
           </div>
 
-          {/* Search Bar & Location Filter */}
-          <div className="max-w-3xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl p-2.5 sm:p-4 shadow-2xl border border-neutral-100/90 text-neutral-900">
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-neutral-50 rounded-xl border border-neutral-200">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 shrink-0" />
+          {/* Dynamic World & Type Search Bar */}
+          <div className="relative max-w-2xl mx-auto w-full pt-1">
+            <div className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 sm:py-3.5 bg-neutral-50 hover:bg-white rounded-2xl border border-neutral-200 hover:border-neutral-300 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-500/10 focus-within:bg-white transition-all shadow-xs">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search rental houses, boutique hotels, or locations..."
-                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none py-1.5"
+                placeholder="Search any location, 1 BHK, fully furnished, or hotel stay..."
+                className="w-full bg-transparent text-xs sm:text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-xs text-neutral-400 hover:text-neutral-700 font-bold px-1.5"
+                  className="w-5 h-5 rounded-full bg-neutral-200 hover:bg-neutral-300 text-neutral-700 flex items-center justify-center text-xs font-bold shrink-0 transition-colors cursor-pointer"
+                  title="Clear search"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            {/* Location Filter Pills */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pt-3 sm:pt-3.5 pb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 shrink-0 mr-1 hidden sm:inline-block">
-                Location:
+            {/* Smart Suggestions Dropdown / Inline Bar */}
+            {searchQuery && matchingSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white rounded-xl border border-neutral-200 shadow-xl z-30 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 px-2 py-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-rose-500" />
+                  <span>Suggested Matches</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {matchingSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSearchQuery(suggestion)}
+                      className="px-2.5 py-1 rounded-lg bg-neutral-50 hover:bg-rose-50 text-neutral-700 hover:text-rose-600 border border-neutral-200/80 hover:border-rose-200 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Search className="w-2.5 h-2.5 text-neutral-400" />
+                      <span>{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Filter Suggestion Pills */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pt-3 pb-1 -mx-2 px-2">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-neutral-400 shrink-0 font-mono">
+                Popular:
               </span>
-              {stayLocations.map((loc) => {
-                const isSelected = selectedLocation === loc;
+              {popularSuggestions.map((tag) => {
+                const isActive = searchQuery.toLowerCase() === tag.label.toLowerCase();
                 return (
                   <button
-                    key={loc}
-                    onClick={() => setSelectedLocation(loc)}
+                    key={tag.label}
+                    onClick={() => {
+                      if (isActive) {
+                        setSearchQuery("");
+                      } else {
+                        setSearchQuery(tag.label);
+                        setSelectedLocation("All Locations");
+                      }
+                    }}
                     className={cn(
-                      "shrink-0 px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer active:scale-95",
-                      isSelected
-                        ? "bg-rose-600 text-white shadow-sm"
-                        : "bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200"
+                      "shrink-0 px-2.5 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-150 cursor-pointer active:scale-95 border",
+                      isActive
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs font-semibold"
+                        : "bg-white hover:bg-neutral-50 text-neutral-600 border-neutral-200"
                     )}
                   >
-                    {loc}
+                    {tag.label}
                   </button>
                 );
               })}
@@ -193,7 +314,7 @@ export function StayView() {
             <div
               key={rental.id}
               onClick={() => setSelectedRental(rental)}
-              className="shrink-0 w-[270px] sm:w-[330px] snap-start rounded-2xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group active:scale-[0.99] cursor-pointer"
+              className="shrink-0 w-[270px] sm:w-[330px] snap-start rounded-2xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-[transform,box-shadow,border-color] duration-200 ease-out flex flex-col justify-between group active:scale-[0.99] cursor-pointer transform-gpu crisp-transform"
             >
               <div className="relative aspect-[16/11] overflow-hidden bg-neutral-100">
                 <img
@@ -322,7 +443,7 @@ export function StayView() {
             <div
               key={stay.id}
               onClick={() => setSelectedStay(stay)}
-              className="shrink-0 w-[270px] sm:w-[330px] snap-start rounded-2xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group active:scale-[0.99] cursor-pointer"
+              className="shrink-0 w-[270px] sm:w-[330px] snap-start rounded-2xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-[transform,box-shadow,border-color] duration-200 ease-out flex flex-col justify-between group active:scale-[0.99] cursor-pointer transform-gpu crisp-transform"
             >
               <div className="relative aspect-[16/11] overflow-hidden bg-neutral-100">
                 <img
@@ -505,7 +626,7 @@ export function StayView() {
 
             <div className="p-3 sm:p-4 border-t border-neutral-200/80 bg-neutral-50 flex flex-row items-center gap-2 sm:gap-3 shrink-0">
               <a
-                href={`https://wa.me/918638053380?text=${encodeURIComponent(
+                href={`https://wa.me/918472934031?text=${encodeURIComponent(
                   `Hi Design Nayan Stay! I am interested in visiting *${selectedRental.title}* in ${selectedRental.locality} (Rent: ₹${selectedRental.monthlyRent.toLocaleString()}/mo). Please share available visiting slots.`
                 )}`}
                 target="_blank"
@@ -616,7 +737,7 @@ export function StayView() {
 
             <div className="p-3 sm:p-4 border-t border-neutral-200/80 bg-neutral-50 flex flex-row items-center gap-2 sm:gap-3 shrink-0">
               <a
-                href={`https://wa.me/918638053380?text=${encodeURIComponent(
+                href={`https://wa.me/918472934031?text=${encodeURIComponent(
                   `Hi Design Nayan Stay! I am interested in booking *${selectedStay.title}* in ${selectedStay.city} (Starting ₹${selectedStay.pricePerNight.toLocaleString()}/night). Please share availability.`
                 )}`}
                 target="_blank"

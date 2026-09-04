@@ -346,7 +346,7 @@ export function HotelsCatalogView() {
 
             <div className="p-3 sm:p-4 border-t border-neutral-200/80 bg-neutral-50 flex flex-row items-center gap-2 sm:gap-3 shrink-0">
               <a
-                href={`https://wa.me/918638053380?text=${encodeURIComponent(
+                href={`https://wa.me/918472934031?text=${encodeURIComponent(
                   `Hi Design Nayan Stay! I am interested in booking *${selectedProperty.title}* in ${selectedProperty.city} (Starting ₹${selectedProperty.pricePerNight.toLocaleString()}/night). Please share availability.`
                 )}`}
                 target="_blank"

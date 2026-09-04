@@ -44,10 +44,12 @@ export function HeroSection() {
         {/* Content on Left */}
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-8 lg:pt-20 lg:pb-12 w-full flex-1 flex flex-col justify-center">
           <div className="max-w-xl lg:max-w-2xl space-y-6 lg:space-y-7">
-            <h1 className="text-5xl lg:text-[68px] font-extrabold tracking-tight text-neutral-950 leading-[1.04]">
-              Design. <br />
-              Build. <span className="text-rose-600 font-extrabold">Grow.</span> <br />
-              <span className="text-rose-600 font-extrabold">Stay.</span>
+            <h1 className="text-5xl lg:text-[68px] font-extrabold tracking-tight text-neutral-950 leading-[1.14] space-y-1 sm:space-y-1.5">
+              <span className="block">Design.</span>
+              <span className="block">
+                Build. <span className="text-rose-600 font-extrabold">Grow.</span>
+              </span>
+              <span className="block text-rose-600 font-extrabold">Stay.</span>
             </h1>
 
             <p className="text-neutral-600 text-base max-w-sm leading-relaxed font-normal">
@@ -56,7 +58,7 @@ export function HeroSection() {
 
             <div className="flex items-center gap-3 pt-1">
               <Link
-                href="/services"
+                href="#services"
                 className="px-6 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-rose-600/20 active:scale-95 flex items-center gap-2 whitespace-nowrap shrink-0"
               >
                 <span>EXPLORE SERVICES</span>
@@ -123,10 +125,12 @@ export function HeroSection() {
         
         {/* Top Content & Horizontal Buttons */}
         <div className="space-y-3.5">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-950 leading-[1.08]">
-            Design. <br />
-            Build. <span className="text-rose-600 font-bold">Grow.</span> <br />
-            <span className="text-rose-600 font-bold">Stay.</span>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-950 leading-[1.14] space-y-1">
+            <span className="block">Design.</span>
+            <span className="block">
+              Build. <span className="text-rose-600 font-bold">Grow.</span>
+            </span>
+            <span className="block text-rose-600 font-bold">Stay.</span>
           </h1>
 
           <p className="text-neutral-600 text-xs leading-relaxed font-normal max-w-xs">
@@ -136,7 +140,7 @@ export function HeroSection() {
           {/* Horizontal Side-by-Side Action Buttons */}
           <div className="flex flex-row items-center gap-2 pt-0.5">
             <Link
-              href="/services"
+              href="#services"
               className="flex-1 px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase tracking-wider transition-all shadow-md shadow-rose-600/20 active:scale-95 flex items-center justify-center gap-1 whitespace-nowrap"
             >
               <span>EXPLORE SERVICES</span>

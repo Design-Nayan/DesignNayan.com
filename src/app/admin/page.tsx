@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
       id: "inq_2",
       name: "Bikash Barman",
       phone: "+91 98640 67890",
-      service: "Turnkey Construction",
+      service: "Nayan Constructions",
       location: "Silchar, Assam",
       status: "IN REVIEW",
       time: "2 hours ago",

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Layers, HardHat, Hotel, MessageSquare } from "lucide-react";
+import { Home, Layers, HardHat, Hotel, Video, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function MobileBottomBar() {
@@ -29,6 +29,11 @@ export function MobileBottomBar() {
       label: "Stay",
       href: "/stay",
       icon: Hotel,
+    },
+    {
+      label: "Creators",
+      href: "/creators",
+      icon: Video,
     },
     {
       label: "Contact",

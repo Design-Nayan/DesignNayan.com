@@ -10,6 +10,7 @@ export interface ServiceItem {
   category: "DESIGN & ARCHITECTURE" | "BUILD & CONSTRUCTION" | "BRANDING & CREATIVE" | "DIGITAL & MARKETING";
   iconName: string;
   link: string;
+  destinationHub: "STUDIO" | "BUILD" | "CREATORS";
 }
 
 export interface ProjectItem {
@@ -77,53 +78,15 @@ export const serviceCategories = [
 ];
 
 export const allServices: ServiceItem[] = [
-  {
-    id: "3d-rendering",
-    title: "3D Rendering",
-    description: "Photorealistic exterior & interior renders.",
-    category: "DESIGN & ARCHITECTURE",
-    iconName: "Box",
-    link: "/studio#3d-rendering",
-  },
-  {
-    id: "floor-plan",
-    title: "Floor Plan",
-    description: "Accurate, functional and detailed layouts.",
-    category: "DESIGN & ARCHITECTURE",
-    iconName: "Grid",
-    link: "/studio#floor-plan",
-  },
-  {
-    id: "interior-design",
-    title: "Interior Design",
-    description: "Beautiful, practical and people-centric spaces.",
-    category: "DESIGN & ARCHITECTURE",
-    iconName: "Sofa",
-    link: "/studio#interior-design",
-  },
-  {
-    id: "exterior-design",
-    title: "Exterior Design",
-    description: "Modern, unique and captivating exteriors.",
-    category: "DESIGN & ARCHITECTURE",
-    iconName: "Building2",
-    link: "/studio#exterior-design",
-  },
-  {
-    id: "architecture",
-    title: "Architecture",
-    description: "Concept-to-construction architectural solutions.",
-    category: "DESIGN & ARCHITECTURE",
-    iconName: "Compass",
-    link: "/studio#architecture",
-  },
+  // 1st Row (Graphic Design & Branding Suite -> Studio)
   {
     id: "graphic-design",
-    title: "Graphic Design",
+    title: "Graphic Designing",
     description: "Creative visuals that communicate better.",
     category: "BRANDING & CREATIVE",
     iconName: "Palette",
-    link: "/studio#graphic-design",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
   {
     id: "branding",
@@ -131,7 +94,8 @@ export const allServices: ServiceItem[] = [
     description: "Build a strong, unique brand identity.",
     category: "BRANDING & CREATIVE",
     iconName: "Sparkles",
-    link: "/studio#branding",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
   {
     id: "website-design",
@@ -139,7 +103,8 @@ export const allServices: ServiceItem[] = [
     description: "Responsive, modern and high-performing sites.",
     category: "DIGITAL & MARKETING",
     iconName: "Laptop",
-    link: "/studio#website-design",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
   {
     id: "social-media",
@@ -147,7 +112,8 @@ export const allServices: ServiceItem[] = [
     description: "Manage, grow and engage your audience.",
     category: "DIGITAL & MARKETING",
     iconName: "Share2",
-    link: "/studio#social-media",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
   {
     id: "ads-management",
@@ -155,15 +121,140 @@ export const allServices: ServiceItem[] = [
     description: "Targeted ads that drive real results.",
     category: "DIGITAL & MARKETING",
     iconName: "Target",
-    link: "/studio#ads-management",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
+
+  // 2nd Row (3D Rendering & Architectural Design -> Studio)
+  {
+    id: "3d-rendering",
+    title: "3D Rendering",
+    description: "Photorealistic exterior & interior renders.",
+    category: "DESIGN & ARCHITECTURE",
+    iconName: "Box",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "floor-plan",
+    title: "Floor Planning",
+    description: "Accurate, functional and detailed layouts.",
+    category: "DESIGN & ARCHITECTURE",
+    iconName: "Grid",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "interior-design",
+    title: "Interior Designing",
+    description: "Beautiful, practical and people-centric spaces.",
+    category: "DESIGN & ARCHITECTURE",
+    iconName: "Sofa",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "exterior-design",
+    title: "Exterior Designing",
+    description: "Modern, unique and captivating exteriors.",
+    category: "DESIGN & ARCHITECTURE",
+    iconName: "Building2",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "architecture",
+    title: "Architecture",
+    description: "Concept-to-construction architectural solutions.",
+    category: "DESIGN & ARCHITECTURE",
+    iconName: "Compass",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+
+  // 3rd Row (Media & Construction)
   {
     id: "video-editing",
     title: "Video Editing",
     description: "Engaging edits that tell your story.",
     category: "BRANDING & CREATIVE",
     iconName: "Film",
-    link: "/studio#video-editing",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "content-creation",
+    title: "Content Creation",
+    description: "Verified creator shoots, reels, photos & video campaigns.",
+    category: "BRANDING & CREATIVE",
+    iconName: "Camera",
+    link: "/creators",
+    destinationHub: "CREATORS",
+  },
+  {
+    id: "campaigns",
+    title: "Campaigns",
+    description: "Strategic brand campaigns that drive action.",
+    category: "BRANDING & CREATIVE",
+    iconName: "Megaphone",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "construction",
+    title: "Construction",
+    description: "Nayan Constructions civil execution & RCC work.",
+    category: "BUILD & CONSTRUCTION",
+    iconName: "HardHat",
+    link: "/build",
+    destinationHub: "BUILD",
+  },
+  {
+    id: "material-supply",
+    title: "Materials",
+    description: "Quality materials from trusted partners.",
+    category: "BUILD & CONSTRUCTION",
+    iconName: "Truck",
+    link: "/build",
+    destinationHub: "BUILD",
+  },
+
+  // 4th Row (Technical, Growth & Influencers)
+  {
+    id: "estimation",
+    title: "Estimation",
+    description: "Itemized BOQ, structural cost & budget analysis.",
+    category: "BUILD & CONSTRUCTION",
+    iconName: "Calculator",
+    link: "/build",
+    destinationHub: "BUILD",
+  },
+  {
+    id: "project-management",
+    title: "Project Management",
+    description: "Site engineering, quality audits & milestone delivery.",
+    category: "BUILD & CONSTRUCTION",
+    iconName: "Briefcase",
+    link: "/build",
+    destinationHub: "BUILD",
+  },
+  {
+    id: "digital-marketing",
+    title: "Digital Marketing",
+    description: "Data-driven SEO, growth & lead generation.",
+    category: "DIGITAL & MARKETING",
+    iconName: "TrendingUp",
+    link: "/studio",
+    destinationHub: "STUDIO",
+  },
+  {
+    id: "influencers",
+    title: "Influencers",
+    description: "Strategic creator collaborations & PR campaigns.",
+    category: "DIGITAL & MARKETING",
+    iconName: "Users",
+    link: "/creators",
+    destinationHub: "CREATORS",
   },
   {
     id: "ui-ux-design",
@@ -171,31 +262,8 @@ export const allServices: ServiceItem[] = [
     description: "User-friendly interfaces that convert.",
     category: "DIGITAL & MARKETING",
     iconName: "Layout",
-    link: "/studio#ui-ux-design",
-  },
-  {
-    id: "content-creation",
-    title: "Content Creation",
-    description: "Photos, videos & content that connect.",
-    category: "BRANDING & CREATIVE",
-    iconName: "Camera",
-    link: "/studio#content-creation",
-  },
-  {
-    id: "construction",
-    title: "Construction",
-    description: "From planning to real-world construction.",
-    category: "BUILD & CONSTRUCTION",
-    iconName: "HardHat",
-    link: "/build#construction",
-  },
-  {
-    id: "material-supply",
-    title: "Material Supply",
-    description: "Quality materials from trusted partners.",
-    category: "BUILD & CONSTRUCTION",
-    iconName: "Truck",
-    link: "/build#material-supply",
+    link: "/studio",
+    destinationHub: "STUDIO",
   },
 ];
 
@@ -214,7 +282,7 @@ export const ecosystemCards: EcosystemCard[] = [
     description: "Construction, materials, suppliers and project support.",
     linkText: "EXPLORE BUILD",
     href: "/build",
-    image: "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
   },
   {
     tag: "STAY",
@@ -244,7 +312,7 @@ export const recentProjects: ProjectItem[] = [
       "Custom double-height atrium with skylight cross-ventilation",
       "Earthquake-resistant RCC structural engineering",
       "Italian marble flooring & acoustic wooden ceiling louvers",
-      "Turnkey civil execution & landscape garden integration",
+      "Nayan Constructions civil execution & landscape garden integration",
     ],
     gallery: [
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80",
