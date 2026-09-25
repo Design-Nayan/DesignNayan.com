@@ -19,25 +19,59 @@ interface ProjectModalProps {
 export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Close on Escape key and prevent background scroll while open
+  React.useEffect(() => {
+    if (!project) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [project, onClose]);
+
   if (!project) return null;
 
   const currentHero = selectedImage || project.image;
 
   return (
-    <div className="fixed inset-0 z-40 bg-neutral-950/75 backdrop-blur-sm flex items-center justify-center p-3 pt-3 pb-24 sm:p-6 sm:pb-6 overflow-y-auto animate-in fade-in duration-200 font-sans">
-      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[calc(100vh-130px)] sm:max-h-[90vh] flex flex-col shadow-2xl border border-neutral-200 text-neutral-900 relative my-auto overflow-hidden">
+    <div
+      onClick={onClose}
+      data-lenis-prevent="true"
+      className="fixed inset-0 z-[200] bg-neutral-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200 font-sans"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        data-lenis-prevent="true"
+        className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[88vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-neutral-200 text-neutral-900 relative my-auto overflow-hidden"
+      >
         
-        {/* Floating Close Button */}
+        {/* Floating Close Button - Highly visible, z-30, never covered by navbar */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-neutral-950/80 hover:bg-neutral-950 text-white backdrop-blur-md flex items-center justify-center text-sm font-bold z-20 shadow-lg active:scale-95 transition-transform cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-950/85 hover:bg-neutral-950 text-white backdrop-blur-md flex items-center justify-center text-sm font-bold z-30 shadow-xl active:scale-95 transition-transform cursor-pointer border border-white/20"
           aria-label="Close modal"
+          title="Close (Esc)"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Scrollable Modal Content */}
-        <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          className="overflow-y-auto overscroll-contain flex-1 min-h-0 p-4 sm:p-6 space-y-4 sm:space-y-6"
+        >
           
           {/* Project Hero Image */}
           <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-neutral-900 rounded-xl sm:rounded-2xl overflow-hidden -mt-1 sm:mt-0">

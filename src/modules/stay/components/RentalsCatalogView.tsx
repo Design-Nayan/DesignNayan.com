@@ -19,7 +19,8 @@ import {
   Calendar,
   Sparkles,
   SlidersHorizontal,
-  Home
+  Home,
+  X
 } from "lucide-react";
 import { rentalPropertiesNearYou, stayLocations, RentalProperty } from "../data/stay.data";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,26 @@ export function RentalsCatalogView() {
       ? rentalPropertiesNearYou.find((p) => p.id === initialPropertyId) || null 
       : null
   );
+
+  // Close on Escape key and prevent background scroll while open
+  React.useEffect(() => {
+    if (!selectedProperty) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedProperty(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [selectedProperty]);
 
   const propertyTypes = ["ALL", "3 BHK Apartment", "2 BHK Builder Floor", "4 BHK Luxury Villa", "Duplex Penthouse"];
   const furnishingTypes = ["ALL", "Fully Furnished", "Semi-Furnished", "Unfurnished"];
@@ -290,23 +311,38 @@ export function RentalsCatalogView() {
       {selectedProperty && (
         <div 
           onClick={() => setSelectedProperty(null)}
-          className="fixed inset-0 z-50 bg-neutral-950/75 backdrop-blur-sm flex items-center justify-center p-3 pt-3 pb-24 sm:p-6 sm:pb-6 overflow-y-auto animate-in fade-in duration-200"
+          data-lenis-prevent="true"
+          className="fixed inset-0 z-[200] bg-neutral-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[calc(100vh-140px)] sm:max-h-[88vh] flex flex-col shadow-2xl border border-neutral-200 text-neutral-900 relative my-auto overflow-hidden"
+            data-lenis-prevent="true"
+            className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full h-[88vh] max-h-[88vh] flex flex-col shadow-2xl border border-neutral-200 text-neutral-900 relative my-auto overflow-hidden"
           >
-            <div className="flex items-center p-3.5 sm:p-4 border-b border-neutral-100 bg-white">
+            <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-neutral-100 bg-[#fafafa] shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
+                <span className="text-xs font-mono uppercase tracking-widest text-neutral-600 font-bold">
+                  Design Nayan Stay • Rental Details
+                </span>
+              </div>
+
               <button
                 onClick={() => setSelectedProperty(null)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-950 cursor-pointer active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-100 hover:bg-neutral-200 active:scale-95 text-neutral-700 hover:text-neutral-950 flex items-center justify-center transition-all cursor-pointer border border-neutral-200 shadow-2xs"
+                aria-label="Close"
+                title="Close (Esc)"
               >
-                <ArrowLeft className="w-4 h-4 text-rose-600" />
-                <span>Back to Listings</span>
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4">
+            <div
+              data-lenis-prevent="true"
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              className="overflow-y-auto overscroll-contain flex-1 min-h-0 p-4 sm:p-6 space-y-4"
+            >
               <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-neutral-900 rounded-xl sm:rounded-2xl overflow-hidden">
                 <img
                   src={selectedProperty.image}
@@ -319,8 +355,8 @@ export function RentalsCatalogView() {
                   </span>
                 </div>
                 <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-3 sm:p-4 rounded-xl text-white">
-                  <div className="flex items-center gap-1 text-[10px] sm:text-xs text-rose-400 font-semibold mb-0.5">
-                    <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] sm:text-xs text-white font-medium mb-1.5 shadow-2xs">
+                    <MapPin className="w-3 h-3 text-white shrink-0" />
                     <span>{selectedProperty.locality}</span>
                   </div>
                   <h2 className="text-base sm:text-2xl font-extrabold tracking-tight text-white leading-tight">

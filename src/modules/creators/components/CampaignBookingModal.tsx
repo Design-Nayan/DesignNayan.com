@@ -61,13 +61,17 @@ export function CampaignBookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+    <div
+      data-lenis-prevent="true"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-200"
+    >
       <div
-        className="relative w-full max-w-3xl bg-white text-neutral-900 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col border border-neutral-200"
+        data-lenis-prevent="true"
+        className="relative w-full max-w-3xl bg-white text-neutral-900 rounded-3xl shadow-2xl overflow-hidden my-auto h-[90vh] max-h-[92vh] flex flex-col border border-neutral-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-[#fafafa]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 bg-[#fafafa] shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
             <span className="text-xs font-mono uppercase tracking-widest text-neutral-600 font-bold">
@@ -78,14 +82,19 @@ export function CampaignBookingModal({
           <button
             onClick={onClose}
             aria-label="Close booking modal"
-            className="w-8 h-8 rounded-full bg-neutral-200 hover:bg-neutral-300 flex items-center justify-center text-neutral-700 transition-colors"
+            className="w-8 h-8 rounded-full bg-neutral-200 hover:bg-neutral-300 flex items-center justify-center text-neutral-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="overflow-y-auto p-6 sm:p-8">
+        <div
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          className="overflow-y-auto overscroll-contain p-6 sm:p-8 flex-1 min-h-0"
+        >
           {submitted ? (
             /* Success State */
             <div className="py-10 text-center space-y-5">

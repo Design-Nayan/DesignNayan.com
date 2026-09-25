@@ -92,15 +92,19 @@ export function SecondStatement({
     <section ref={containerRef} className="relative w-full bg-[#fbfbfa] text-[#141414] py-16 sm:py-24 border-b border-neutral-200 overflow-hidden">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         
-        {/* Large Editorial Headline: Clean simple font, no pill, tight and cohesive spacing */}
-        <div className="second-statement-headline max-w-5xl mb-10 sm:mb-14">
-          <h2 className="text-3xl sm:text-5xl lg:text-[58px] font-bold uppercase tracking-tight leading-[1.05] text-neutral-900 flex flex-col gap-1 sm:gap-1.5">
-            <span>WE TURN IDEAS</span>
-            <span>
-              INTO VISUAL <span className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">STATEMENTS</span>
+        {/* Large Editorial Headline: Clean simple font matching reference image 1 */}
+        <div className="second-statement-headline max-w-6xl mb-8 sm:mb-12">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] xl:text-[40px] font-extrabold uppercase tracking-tight leading-[1.25] text-neutral-900 flex flex-col gap-1.5 sm:gap-2">
+            <span className="block">
+              WE TURN IDEAS
             </span>
-            <span className="text-neutral-400 font-medium">FROM VISION TO DELIVERY —</span>
-            <span>IMPACT THAT LASTS<span className="text-red-600">.</span></span>
+            <span className="block">
+              INTO VISUAL <span className="text-[#dd5132]">STATEMENTS —</span>
+            </span>
+            <span className="block whitespace-normal lg:whitespace-nowrap">
+              <span className="text-[#888888] font-bold">FROM VISION TO DELIVERY — </span>
+              <span className="text-neutral-900 font-extrabold">IMPACT THAT LASTS<span className="text-[#dd5132]">.</span></span>
+            </span>
           </h2>
         </div>
 

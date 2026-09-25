@@ -118,54 +118,41 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
         {/* Seamless Creative Text Area with Google Gemini Air-Flow Gradient in Background */}
         <div className="relative py-2 sm:py-4 lg:py-5 mb-2 overflow-visible">
           
-          {/* Ambient Air-Flow Canvas (Google Gemini Fluid Light Flow of Orange, Logo Red & Electric Blue on White) */}
-          <div className="absolute -inset-x-6 sm:-inset-x-12 -inset-y-8 pointer-events-none overflow-hidden z-0 select-none">
-            {/* Flowing Air Orb 1: Design Logo Brand Red (#dc2626) */}
-            <div className="absolute -top-12 -left-10 w-[420px] sm:w-[580px] h-[420px] sm:h-[580px] rounded-full bg-gradient-to-br from-[#dc2626]/20 via-[#e11d48]/15 to-transparent blur-[75px] sm:blur-[105px] animate-air-flow-1 mix-blend-multiply" />
-
-            {/* Flowing Air Orb 2: Google Gemini Electric Blue (#2563eb / #38bdf8) */}
-            <div className="absolute -bottom-16 -right-10 w-[440px] sm:w-[600px] h-[440px] sm:h-[600px] rounded-full bg-gradient-to-tl from-[#2563eb]/20 via-[#38bdf8]/15 to-transparent blur-[80px] sm:blur-[115px] animate-air-flow-2 mix-blend-multiply" />
-
-            {/* Flowing Air Orb 3: Radiant Neon Orange (#f97316 / #fb923c) */}
-            <div className="absolute top-1/4 right-1/4 w-[360px] sm:w-[500px] h-[360px] sm:h-[500px] rounded-full bg-gradient-to-tr from-[#ea580c]/22 via-[#fb923c]/22 to-transparent blur-[75px] sm:blur-[100px] animate-air-flow-3 mix-blend-multiply" />
-
-            {/* Flowing Air Orb 4: Violet / Indigo Glow where Red & Blue meet */}
-            <div className="absolute bottom-6 left-1/3 w-[320px] h-[320px] rounded-full bg-[#8b5cf6]/15 blur-[85px] animate-pulse-subtle mix-blend-multiply" />
-
-            {/* Soft feathered fade into white page */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,#fcfcfb_100%)]" />
-          </div>
+          {/* Clean Editorial Background matching reference */}
+          <div className="absolute inset-0 bg-[#fbfbfa] pointer-events-none z-0 select-none" />
 
           {/* Foreground: 2-Column Responsive Grid (Big Text on Left, 3 Design Agency Specimen Cards on Right) */}
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center w-full">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center w-full">
             
-            {/* Left Column: Big Editorial Statement Typography */}
-            <div className="editorial-left-text lg:col-span-6 xl:col-span-6 flex flex-col justify-center items-start">
-              <h2 className="flex flex-col gap-1 sm:gap-1.5 lg:gap-2 select-none overflow-visible w-full uppercase font-bold tracking-tight">
-                {/* Line 1: DESIGN NAYAN with animated gradient */}
-                <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">
+            {/* Left Column: Big Editorial Statement Typography matching Reference Image 2 */}
+            <div className="editorial-left-text lg:col-span-7 xl:col-span-7 flex flex-col justify-center items-start">
+              <h2 className="flex flex-col gap-1 sm:gap-1.5 select-none overflow-visible w-full uppercase font-bold tracking-tight">
+                {/* Line 1: DESIGN NAYAN in warm coral-orange */}
+                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[38px] leading-[1.12] text-[#ec6d31] whitespace-nowrap">
                   DESIGN NAYAN
                 </span>
 
-                {/* Line 2: CREATOR SYSTEM, */}
-                <span className="text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02]">
+                {/* Line 2: CREATOR SYSTEM, in Deep Black */}
+                <span className="text-neutral-950 block text-xl sm:text-2xl md:text-3xl lg:text-[36px] xl:text-[42px] leading-[1.12] font-extrabold whitespace-nowrap">
                   CREATOR SYSTEM,
                 </span>
                 
-                {/* Line 3: CREATORS THAT REDEFINE MODERN */}
-                <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">
-                  CREATORS THAT REDEFINE MODERN
+                {/* Line 3: CREATORS THAT REDEFINE in warm coral-orange */}
+                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[38px] leading-[1.12] text-[#ec6d31] whitespace-nowrap">
+                  CREATORS THAT REDEFINE
                 </span>
 
-                {/* Line 4: VISUAL CULTURE. */}
-                <span className="text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02]">
-                  VISUAL CULTURE<span className="text-red-600">.</span>
+                {/* Line 4: MODERN in coral-orange + VISUAL CULTURE in Black + . in coral-orange */}
+                <span className="block text-xl sm:text-2xl md:text-3xl lg:text-[32px] xl:text-[38px] leading-[1.12] whitespace-nowrap">
+                  <span className="text-[#ec6d31]">MODERN </span>
+                  <span className="text-neutral-950">VISUAL CULTURE</span>
+                  <span className="text-[#ec6d31]">.</span>
                 </span>
               </h2>
             </div>
 
             {/* Right Column: 3 Design Agency Specimen Cards (Side-by-Side Horizontal Row, Fits in One Frame) */}
-            <div className="editorial-right-cards lg:col-span-6 xl:col-span-6 relative w-full flex items-center justify-center lg:justify-end py-2">
+            <div className="editorial-right-cards lg:col-span-5 xl:col-span-5 relative w-full flex items-center justify-center lg:justify-end py-2">
               <div className="flex flex-nowrap overflow-x-auto sm:overflow-visible items-center justify-start sm:justify-center lg:justify-end gap-3 sm:gap-3.5 xl:gap-4 max-w-full pb-2 sm:pb-0 px-1 scrollbar-none">
                 
                 {/* Agency Card 1: The 3-Second Hook */}

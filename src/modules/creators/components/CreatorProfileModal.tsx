@@ -83,11 +83,13 @@ export function CreatorProfileModal({
       aria-modal="true"
       aria-label={`${creator.name} Creator Profile`}
       onClick={onClose}
-      className="fixed inset-0 z-[200] overflow-y-auto bg-black/80 backdrop-blur-md flex min-h-screen items-center justify-center p-3 sm:p-5 md:p-6 animate-in fade-in duration-200"
+      data-lenis-prevent="true"
+      className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-5 md:p-6 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl lg:max-w-5xl bg-white text-neutral-900 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-neutral-200/90 my-auto max-h-[92vh]"
+        data-lenis-prevent="true"
+        className="relative w-full max-w-4xl lg:max-w-5xl bg-white text-neutral-900 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-neutral-200/90 my-auto h-[92vh] max-h-[92vh]"
       >
         {/* Modal Top Header Bar - Always visible, never covered by navbar */}
         <div className="flex items-center justify-between px-5 sm:px-7 py-3.5 border-b border-neutral-100 bg-[#fafafa] shrink-0">
@@ -116,8 +118,13 @@ export function CreatorProfileModal({
           </button>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="overflow-y-auto p-5 sm:p-7 space-y-6 flex-1">
+        {/* Scrollable Content Body with smooth native scrolling & Lenis isolation */}
+        <div
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          className="overflow-y-auto overscroll-contain p-5 sm:p-7 space-y-6 flex-1 min-h-0"
+        >
           {/* Main Top Grid: Left Media & Quick Specs | Right Metrics & Tabbed Admin-Ready Data */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             

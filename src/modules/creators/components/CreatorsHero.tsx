@@ -124,35 +124,35 @@ export function CreatorsHero({ onExploreClick, onBookClick }: CreatorsHeroProps)
           </div>
 
           {/* Col 2 on desktop: Main Headline Group + Action Buttons directly underneath */}
-          <div className="hero-right-content order-1 md:order-2 text-center md:text-right max-w-2xl lg:max-w-3xl xl:max-w-4xl w-full md:ml-auto self-center pr-0 sm:pr-8 md:pr-12 overflow-visible flex flex-col items-center md:items-end">
+          <div className="hero-right-content order-1 md:order-2 text-center md:text-right max-w-2xl lg:max-w-3xl xl:max-w-4xl w-full md:ml-auto self-center pr-2 sm:pr-8 md:pr-12 overflow-visible flex flex-col items-center md:items-end">
             
             {/* Subtle Design Agency Micro-Kicker (Positioned at TOP) */}
-            <div className="inline-flex items-center gap-2 mb-1.5 sm:mb-2.5">
+            <div className="inline-flex items-center gap-2 mb-1.5 sm:mb-2.5 mr-1 sm:mr-2 md:mr-3 lg:mr-4">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
               <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.24em] uppercase text-red-400 font-semibold">
                 DESIGN NAYAN // TALENTED CREATORS
               </span>
             </div>
 
-            <h1 className="overflow-visible select-none py-1 flex flex-col items-center md:items-end uppercase font-black tracking-tight leading-[0.92] space-y-1 sm:space-y-2 pr-0 md:pr-4">
-              {/* Simple Bold Sans "CREATIVE" with Fast Animated Gradient */}
-              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_30%,#f97316_60%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.35)]">
+            <h1 className="overflow-visible select-none py-0.5 flex flex-col items-center md:items-end uppercase font-black tracking-tight leading-[0.84] text-right mr-1 sm:mr-2 md:mr-3 lg:mr-4 pr-1 sm:pr-2 md:pr-3">
+              {/* "CREATIVE" in warm terracotta red */}
+              <span className="block overflow-visible pr-2 sm:pr-3 text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-[68px] xl:text-[78px] text-[#dd5132] tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
                 CREATIVE
               </span>
               
-              {/* Simple Bold Sans "BRANDING" in Crisp White */}
-              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-white">
+              {/* "BRANDING" in Crisp White, slightly smaller than before but still larger than CREATIVE & AGENCY, with slightly lighter weight */}
+              <span className="block overflow-visible pr-2 sm:pr-3 text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] font-extrabold text-white tracking-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.65)] my-0">
                 BRANDING
               </span>
 
-              {/* Simple Bold Sans "AGENCY" with Fast Animated Gradient */}
-              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_30%,#f97316_60%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.35)]">
+              {/* "AGENCY" in exact same weight and size as CREATIVE */}
+              <span className="block overflow-visible pr-2 sm:pr-3 text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-[68px] xl:text-[78px] text-[#dd5132] tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
                 AGENCY
               </span>
             </h1>
 
             {/* Action Buttons Row */}
-            <div className="mt-3 sm:mt-6 flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-4 pr-0 md:pr-1">
+            <div className="mt-3 sm:mt-6 flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-4 mr-1 sm:mr-2 md:mr-3 lg:mr-4 pr-0 md:pr-1">
               
               {/* Button 1: Hire Creators Now (White -> Changes on Hover to Logo Brand Red with Animated Moving Gradient) */}
               <button
