@@ -26,15 +26,19 @@ export function CapabilitiesBento({ onSelectCategory }: CapabilitiesBentoProps) 
         ".bento-heading",
         { y: -30, opacity: 0 },
         {
+          x: 0,
           y: 0,
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".bento-heading",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -47,13 +51,16 @@ export function CapabilitiesBento({ onSelectCategory }: CapabilitiesBentoProps) 
           y: 0,
           opacity: 1,
           duration: 0.8,
-          stagger: 0.1,
+          stagger: 0.08,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".bento-pills-container",
             start: "top 90%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );

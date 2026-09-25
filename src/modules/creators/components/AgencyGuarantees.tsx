@@ -37,11 +37,14 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".guarantees-heading",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -54,13 +57,16 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
           y: 0,
           opacity: 1,
           duration: 0.8,
-          stagger: 0.08,
+          stagger: 0.06,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".guarantees-grid",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -74,11 +80,14 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".custom-campaign-banner",
             start: "top 90%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -91,11 +100,14 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".custom-campaign-banner",
             start: "top 90%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );

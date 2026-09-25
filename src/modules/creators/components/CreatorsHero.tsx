@@ -73,7 +73,7 @@ export function CreatorsHero({ onExploreClick, onBookClick }: CreatorsHeroProps)
       {/* Main Hero Visual: High-Fashion Editorial Model (Clear, Crisp & Cinematic) */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <Image
-          src="/images/creators/hero-editorial-bg.jpg"
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/images/creators/hero-editorial-bg.jpg`}
           alt="Design Nayan Creative Talent Editorial"
           fill
           priority

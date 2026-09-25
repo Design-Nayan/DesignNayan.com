@@ -32,11 +32,14 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
           opacity: 1,
           duration: 0.9,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".editorial-left-text",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -49,13 +52,16 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
           x: 0,
           opacity: 1,
           duration: 0.85,
-          stagger: 0.1,
+          stagger: 0.08,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".editorial-right-cards",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -69,11 +75,14 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
           opacity: 1,
           duration: 0.8,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".pyramid-heading",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -87,11 +96,14 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
           opacity: 1,
           duration: 0.9,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".pyramid-display",
             start: "top 90%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );

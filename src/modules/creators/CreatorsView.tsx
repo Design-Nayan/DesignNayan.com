@@ -17,6 +17,7 @@ import { CreatorDiscovery } from "./components/CreatorDiscovery";
 import { SecondStatement } from "./components/SecondStatement";
 import { AgencyGuarantees } from "./components/AgencyGuarantees";
 import { CreatorProfileModal } from "./components/CreatorProfileModal";
+import Lenis from "lenis";
 import { CampaignRosterBar } from "./components/CampaignRosterBar";
 import { CampaignBookingModal } from "./components/CampaignBookingModal";
 
@@ -24,14 +25,54 @@ export function CreatorsView() {
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
   const [quickViewCreator, setQuickViewCreator] = useState<Creator | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const lenisRef = React.useRef<Lenis | null>(null);
 
   useEffect(() => {
+    // 1. Initialize Lenis for butter-smooth, luxury flowy momentum scroll
+    const lenis = new Lenis({
+      duration: 1.25,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 1.05,
+      touchMultiplier: 1.2,
+      infinite: false,
+    });
+
+    lenisRef.current = lenis;
+
+    // Synchronize Lenis scroll position with GSAP ScrollTrigger
+    lenis.on("scroll", ScrollTrigger.update);
+
+    // Integrate with GSAP ticker for 60-120fps synchronized frame updates
+    const tickerUpdate = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerUpdate);
+    gsap.ticker.lagSmoothing(0);
+
     // Give DOM images and layouts a brief moment to settle, then refresh ScrollTrigger
     const timer = setTimeout(() => {
       ScrollTrigger.refresh();
     }, 200);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      gsap.ticker.remove(tickerUpdate);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
   }, []);
+
+  // Pause Lenis scrolling when modals are open to prevent background scrolling
+  useEffect(() => {
+    if (isBookingOpen || quickViewCreator !== null) {
+      lenisRef.current?.stop();
+    } else {
+      lenisRef.current?.start();
+    }
+  }, [isBookingOpen, quickViewCreator]);
 
   // Selected creators objects
   const selectedCreators = CREATORS_DATA.filter((c) =>
@@ -60,9 +101,13 @@ export function CreatorsView() {
   };
 
   const scrollToDirectory = () => {
-    const el = document.getElementById("creator-directory");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo("#creator-directory", { duration: 1.2 });
+    } else {
+      const el = document.getElementById("creator-directory");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 

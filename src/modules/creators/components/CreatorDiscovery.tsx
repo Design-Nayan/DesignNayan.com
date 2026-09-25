@@ -62,11 +62,14 @@ export function CreatorDiscovery({
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".discovery-header-left",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -80,11 +83,14 @@ export function CreatorDiscovery({
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".discovery-header-right",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -105,11 +111,14 @@ export function CreatorDiscovery({
               opacity: 1,
               duration: 0.75,
               ease: "power2.out",
+              force3D: true,
+              overwrite: "auto",
               scrollTrigger: {
                 trigger: row,
                 start: "top 88%",
                 end: "bottom top",
                 toggleActions: "play reverse play reverse",
+                fastScrollEnd: true,
               },
             }
           );
@@ -124,11 +133,14 @@ export function CreatorDiscovery({
               opacity: 1,
               duration: 0.75,
               ease: "power2.out",
+              force3D: true,
+              overwrite: "auto",
               scrollTrigger: {
                 trigger: row,
                 start: "top 88%",
                 end: "bottom top",
                 toggleActions: "play reverse play reverse",
+                fastScrollEnd: true,
               },
             }
           );
@@ -142,13 +154,16 @@ export function CreatorDiscovery({
               y: 0,
               opacity: 1,
               duration: 0.8,
-              stagger: 0.05,
+              stagger: 0.04,
               ease: "power2.out",
+              force3D: true,
+              overwrite: "auto",
               scrollTrigger: {
                 trigger: row,
                 start: "top 88%",
                 end: "bottom top",
                 toggleActions: "play reverse play reverse",
+                fastScrollEnd: true,
               },
             }
           );

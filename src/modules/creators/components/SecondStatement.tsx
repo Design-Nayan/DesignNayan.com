@@ -52,11 +52,14 @@ export function SecondStatement({
           opacity: 1,
           duration: 0.9,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".second-statement-headline",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -70,11 +73,14 @@ export function SecondStatement({
           opacity: 1,
           duration: 0.9,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".second-statement-carousel",
             start: "top 90%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );

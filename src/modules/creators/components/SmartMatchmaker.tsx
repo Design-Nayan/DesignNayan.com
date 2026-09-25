@@ -51,7 +51,7 @@ export function SmartMatchmaker({
 
   useGSAP(
     () => {
-      // Heading on the left comes from left on scroll down, reverses on scroll up
+      // Heading left comes from left on scroll down, reverses on scroll up
       gsap.fromTo(
         ".matchmaker-heading-left",
         { x: -55, opacity: 0 },
@@ -60,11 +60,14 @@ export function SmartMatchmaker({
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".matchmaker-heading-left",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -78,11 +81,14 @@ export function SmartMatchmaker({
           opacity: 1,
           duration: 0.85,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".matchmaker-btn-right",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -96,11 +102,14 @@ export function SmartMatchmaker({
           opacity: 1,
           duration: 0.9,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".matchmaker-console",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );
@@ -113,13 +122,16 @@ export function SmartMatchmaker({
           y: 0,
           opacity: 1,
           duration: 0.8,
-          stagger: 0.08,
+          stagger: 0.06,
           ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
           scrollTrigger: {
             trigger: ".matchmaker-console",
             start: "top 88%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
           },
         }
       );

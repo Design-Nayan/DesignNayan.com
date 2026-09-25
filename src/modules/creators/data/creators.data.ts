@@ -1,5 +1,7 @@
 import { Creator, CreatorCategory, DeliverableFormat, ReachTier } from "../creators.types";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 /**
  * MASTER CREATOR ROSTER
  *
@@ -48,7 +50,7 @@ export const CREATORS_DATA: Creator[] = [
         brand: "Gentle Monster",
         campaign: "Solar Eclipse Eyewear Drop",
         metric: "2.8M Views • 6.4x Direct ROAS",
-        thumbnail: "/images/creators/portrait-1.jpg",
+        thumbnail: `${basePath}/images/creators/portrait-1.jpg`,
       },
       {
         brand: "Diesel",
@@ -162,7 +164,7 @@ export const CREATORS_DATA: Creator[] = [
         brand: "Nike Air Max",
         campaign: "Floating Neon Tokyo Skyscraper",
         metric: "7.6M Views • 340K Shares",
-        thumbnail: "/images/creators/portrait-3.jpg",
+        thumbnail: `${basePath}/images/creators/portrait-3.jpg`,
       },
     ],
     packages: [
@@ -263,7 +265,7 @@ export const CREATORS_DATA: Creator[] = [
         brand: "WHOOP 4.0",
         campaign: "Sleep Strain Breakdown Hook",
         metric: "5.4M Views • 14.2K App Installs",
-        thumbnail: "/images/creators/bottom-3.jpg",
+        thumbnail: `${basePath}/images/creators/bottom-3.jpg`,
       },
     ],
     packages: [
@@ -629,7 +631,7 @@ export const AGENCY_CAPABILITIES = [
     tag: "SCALE FAST",
     description:
       "Engineered hooks, high retention pacing, and consumer psychology. We deploy creators who turn viewers into repeat buyers across TikTok, Reels, and YouTube Shorts.",
-    image: "/images/creators/bento-1.jpg",
+    image: `${basePath}/images/creators/bento-1.jpg`,
     stats: "3.4x Average ROAS",
     highlight: false,
   },
@@ -640,7 +642,7 @@ export const AGENCY_CAPABILITIES = [
     tag: "FLAGSHIP HERO",
     description:
       "Arri & RED camera cinematography, bespoke color grading, and commercial storytelling. We give your hero launches the prestige of a global fashion house.",
-    image: "/images/creators/bento-2.jpg",
+    image: `${basePath}/images/creators/bento-2.jpg`,
     stats: "4K DCI • Sound Design",
     highlight: true,
   },
@@ -651,7 +653,7 @@ export const AGENCY_CAPABILITIES = [
     tag: "TIMELESS",
     description:
       "Billboard-ready photography, art-directed sets, and curated model casting. Crafted to establish high-fashion pedigree and brand equity.",
-    image: "/images/creators/bento-3.jpg",
+    image: `${basePath}/images/creators/bento-3.jpg`,
     stats: "High-Res Raw Stills",
     highlight: false,
   },
@@ -662,7 +664,7 @@ export const AGENCY_CAPABILITIES = [
     tag: "VIRAL SENSATION",
     description:
       "Physics-defying 3D product animations and simulated real-world spectacles that halt thumbs on social feeds and earn organic press coverage.",
-    image: "/images/creators/bento-4.jpg",
+    image: `${basePath}/images/creators/bento-4.jpg`,
     stats: "FOOH & 3D Simulations",
     highlight: false,
   },
