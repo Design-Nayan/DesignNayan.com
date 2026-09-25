@@ -92,21 +92,15 @@ export function SecondStatement({
     <section ref={containerRef} className="relative w-full bg-[#fbfbfa] text-[#141414] py-16 sm:py-24 border-b border-neutral-200 overflow-hidden">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
         
-        {/* Large Editorial Headline: Refined font weight (semibold/medium instead of thick font-black) */}
-        <div className="second-statement-headline max-w-5xl mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-semibold uppercase tracking-tight leading-[1.12] text-neutral-900">
-            WE TURN IDEAS
-            <br />
-            INTO VISUAL{" "}
-            <span className="inline-flex items-center align-middle mx-1 sm:mx-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-red-600 via-rose-700 to-amber-600 shadow-sm text-white text-xs sm:text-sm font-medium tracking-normal select-none relative overflow-hidden">
-              <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse" />
-              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider">VIRAL IMPACT</span>
-            </span>{" "}
-            STATEMENTS
-            <br />
-            <span className="text-neutral-400 font-normal">FROM VISION TO DELIVERY —</span>
-            <br />
-            IMPACT THAT LASTS
+        {/* Large Editorial Headline: Clean simple font, no pill, tight and cohesive spacing */}
+        <div className="second-statement-headline max-w-5xl mb-10 sm:mb-14">
+          <h2 className="text-3xl sm:text-5xl lg:text-[58px] font-bold uppercase tracking-tight leading-[1.05] text-neutral-900 flex flex-col gap-1 sm:gap-1.5">
+            <span>WE TURN IDEAS</span>
+            <span>
+              INTO VISUAL <span className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">STATEMENTS</span>
+            </span>
+            <span className="text-neutral-400 font-medium">FROM VISION TO DELIVERY —</span>
+            <span>IMPACT THAT LASTS<span className="text-red-600">.</span></span>
           </h2>
         </div>
 

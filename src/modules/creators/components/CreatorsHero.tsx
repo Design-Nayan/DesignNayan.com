@@ -134,26 +134,20 @@ export function CreatorsHero({ onExploreClick, onBookClick }: CreatorsHeroProps)
               </span>
             </div>
 
-            <h1 className="overflow-visible select-none py-0.5 flex flex-col items-center md:items-end">
-              {/* Italianno "Creative" with Fast Animated Logo Red + Neon Orange Gradient */}
-              <span
-                style={{ fontFamily: "'Italianno', cursive" }}
-                className="font-normal text-5xl xs:text-6xl sm:text-8xl md:text-9xl lg:text-[122px] xl:text-[136px] block leading-[0.98] sm:leading-[1.02] tracking-wide pr-0 md:pr-8 pb-1 sm:pb-2 text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_25%,#f97316_50%,#fb923c_75%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.45)]"
-              >
-                Creative
+            <h1 className="overflow-visible select-none py-1 flex flex-col items-center md:items-end uppercase font-black tracking-tight leading-[0.92] space-y-1 sm:space-y-2 pr-0 md:pr-4">
+              {/* Simple Bold Sans "CREATIVE" with Fast Animated Gradient */}
+              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_30%,#f97316_60%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.35)]">
+                CREATIVE
               </span>
               
-              {/* Simple Bold Sans "BRANDING" (Horizontal centerline matches Left Card center) */}
-              <span className="block my-0.5 sm:my-1 font-black uppercase tracking-tight text-white text-2xl xs:text-3xl sm:text-6xl md:text-7xl lg:text-[76px] xl:text-[84px] leading-[0.92] pr-0 md:pr-4">
+              {/* Simple Bold Sans "BRANDING" in Crisp White */}
+              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-white">
                 BRANDING
               </span>
 
-              {/* Italianno "Agency" with Fast Animated Logo Red + Neon Orange Gradient (Generously padded to prevent bottom descender cut) */}
-              <span
-                style={{ fontFamily: "'Italianno', cursive", lineHeight: '1.08', paddingBottom: '0.24em' }}
-                className="font-normal text-5xl xs:text-6xl sm:text-8xl md:text-9xl lg:text-[122px] xl:text-[136px] block tracking-wide pr-0 md:pr-8 text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_25%,#f97316_50%,#fb923c_75%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.45)] overflow-visible"
-              >
-                Agency
+              {/* Simple Bold Sans "AGENCY" with Fast Animated Gradient */}
+              <span className="block text-4xl xs:text-5xl sm:text-7xl md:text-8xl lg:text-[88px] xl:text-[98px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_30%,#f97316_60%,#dc2626_100%)] animate-gradient-fast drop-shadow-[0_0_25px_rgba(234,88,12,0.35)]">
+                AGENCY
               </span>
             </h1>
 

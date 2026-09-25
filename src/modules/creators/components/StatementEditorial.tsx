@@ -141,31 +141,25 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
             
             {/* Left Column: Big Editorial Statement Typography */}
             <div className="editorial-left-text lg:col-span-6 xl:col-span-6 flex flex-col justify-center items-start">
-              <h2 className="flex flex-col gap-1.5 sm:gap-2.5 lg:gap-3 select-none overflow-visible w-full">
-                {/* Line 1: "Design Nayan" Header in Italianno Regular Script with Animated Gradient */}
-                <span
-                  style={{ fontFamily: "'Italianno', cursive", lineHeight: 1.02 }}
-                  className="font-normal block text-5xl sm:text-6xl md:text-7xl lg:text-[76px] xl:text-[84px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_25%,#f97316_50%,#fb923c_75%,#dc2626_100%)] animate-gradient-fast pr-4 overflow-visible"
-                >
-                  Design Nayan
+              <h2 className="flex flex-col gap-1 sm:gap-1.5 lg:gap-2 select-none overflow-visible w-full uppercase font-bold tracking-tight">
+                {/* Line 1: DESIGN NAYAN with animated gradient */}
+                <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">
+                  DESIGN NAYAN
                 </span>
 
-                {/* Line 2: "CREATOR SYSTEM," */}
-                <span className="font-medium text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[46px] xl:text-[52px] tracking-tight leading-[0.96]">
+                {/* Line 2: CREATOR SYSTEM, */}
+                <span className="text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02]">
                   CREATOR SYSTEM,
                 </span>
                 
-                {/* Line 3: "creators that redefine modern" - Strictly on ONE line */}
-                <span
-                  style={{ fontFamily: "'Italianno', cursive", lineHeight: 1.04 }}
-                  className="font-normal lowercase block text-[26px] xs:text-3xl sm:text-5xl md:text-6xl lg:text-[62px] xl:text-[70px] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_25%,#f97316_50%,#fb923c_75%,#dc2626_100%)] animate-gradient-fast pr-2 overflow-visible whitespace-nowrap"
-                >
-                  creators that redefine modern
+                {/* Line 3: CREATORS THAT REDEFINE MODERN */}
+                <span className="block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02] text-transparent bg-clip-text bg-[linear-gradient(90deg,#dc2626_0%,#ea580c_35%,#f97316_70%,#dc2626_100%)] animate-gradient-fast">
+                  CREATORS THAT REDEFINE MODERN
                 </span>
 
-                {/* Line 4: "VISUAL CULTURE." */}
-                <span className="font-medium text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[46px] xl:text-[52px] tracking-tight leading-[0.96]">
-                  VISUAL CULTURE<span className="text-red-600 font-bold">.</span>
+                {/* Line 4: VISUAL CULTURE. */}
+                <span className="text-neutral-950 block text-2xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.02]">
+                  VISUAL CULTURE<span className="text-red-600">.</span>
                 </span>
               </h2>
             </div>
