@@ -211,8 +211,6 @@ export function ServicesGrid({ isFullPage = false }: ServicesGridProps) {
                     "text-xs sm:text-sm lg:text-base font-bold text-neutral-900 mb-1 transition-colors line-clamp-1",
                     isBuild
                       ? "group-hover:text-amber-600"
-                      : isCreators
-                      ? "group-hover:text-rose-600"
                       : "group-hover:text-rose-600"
                   )}>
                     {service.title}
@@ -247,6 +245,7 @@ export function ServicesGrid({ isFullPage = false }: ServicesGridProps) {
                 </div>
               </Link>
             );
+
           })}
         </div>
 

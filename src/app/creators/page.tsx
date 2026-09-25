@@ -1,10 +1,10 @@
-import React from "react";
 import { Metadata } from "next";
 import { CreatorsView } from "@/modules/creators";
 
 export const metadata: Metadata = {
-  title: "Find & Hire Content Creators | Design Nayan",
-  description: "Discover verified content creators, compare transparent pricing, and hire the right talent for your next brand campaign across Beauty, Fashion, Tech, Food, Fitness, and Lifestyle.",
+  title: "Creators Talent Network | Design Nayan",
+  description:
+    "Explore and hire top-tier creators for your brand campaigns. Vetted talent, 4K viral short-form, cinematic commercials, and 100% commercial IP clearance.",
 };
 
 export default function CreatorsPage() {

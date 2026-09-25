@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Caveat:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Italianno&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -83,8 +84,12 @@ html {
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 25s linear infinite;
+  animation: marquee 35s linear infinite;
   will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 /* Desktop Custom Scrollbar */
@@ -94,7 +99,7 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -104,4 +109,153 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.font-cursive {
+  font-family: 'Caveat', cursive, sans-serif !important;
+}
+
+.font-italianno {
+  font-family: 'Italianno', cursive, sans-serif !important;
+}
+
+/* Animated Text Shimmer for Creators Header */
+@keyframes text-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
+}
+
+@keyframes gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-move {
+  background-size: 200% 200%;
+  animation: gradient-move 3.5s ease infinite;
+}
+
+@keyframes gradient-flow-fast {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-gradient-fast {
+  background-size: 200% auto;
+  animation: gradient-flow-fast 2s linear infinite;
+}
+
+/* Google Gemini Style Air-Flow Gradient Orbs */
+@keyframes air-flow-1 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(22%, 14%) scale(1.2) rotate(40deg);
+  }
+  66% {
+    transform: translate(-18%, 18%) scale(0.9) rotate(80deg);
+  }
+}
+
+@keyframes air-flow-2 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(-25%, -18%) scale(1.22) rotate(-50deg);
+  }
+  66% {
+    transform: translate(18%, -15%) scale(0.85) rotate(-100deg);
+  }
+}
+
+@keyframes air-flow-3 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+  }
+  50% {
+    transform: translate(20%, -20%) scale(1.25);
+  }
+}
+
+.animate-air-flow-1 {
+  animation: air-flow-1 9s ease-in-out infinite;
+}
+
+.animate-air-flow-2 {
+  animation: air-flow-2 12s ease-in-out infinite;
+}
+
+.animate-air-flow-3 {
+  animation: air-flow-3 8s ease-in-out infinite;
+}
+
+/* Desktop-Only Hero Section Full Bleed & Seamless Right Edge Merge */
+@media (min-width: 1024px) {
+  .hero-desktop-section {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+  }
+  .hero-desktop-image-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: -40px !important;
+    width: calc(100% + 40px) !important;
+    height: 100%;
+    overflow: hidden;
+  }
+  .hero-desktop-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: right bottom !important;
+    transform: scale(1.04) !important;
+    transform-origin: right bottom !important;
+  }
 }

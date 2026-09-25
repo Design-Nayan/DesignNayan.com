@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { footerNav } from "@/config/navigation";
@@ -5,10 +7,10 @@ import { Logo } from "@/components/common/Logo";
 
 export function Footer() {
   return (
-    <footer className="border-t border-neutral-200 bg-white text-neutral-600 text-xs py-10">
+    <footer className="border-t border-neutral-200 bg-white text-neutral-600 text-xs py-10 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-        {/* Brand Logo */}
-        <Logo />
+        {/* Brand Original Logo */}
+        <Logo isWhite={false} />
 
         {/* Navigation Links */}
         <nav className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 font-semibold tracking-wider uppercase text-[12px] text-neutral-600">
@@ -24,7 +26,7 @@ export function Footer() {
         </nav>
 
         {/* Copyright */}
-        <div className="text-neutral-500 font-medium text-[11px]">
+        <div className="font-medium text-[11px] text-neutral-500">
           &copy; {new Date().getFullYear()} Design Nayan. All Rights Reserved.
         </div>
       </div>

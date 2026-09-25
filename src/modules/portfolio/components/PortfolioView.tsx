@@ -1,35 +1,35 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
   ArrowUpRight, 
   ArrowLeft, 
-  ArrowRight,
+  ArrowRight, 
   Search, 
   MapPin, 
   X,
   Sparkles,
   LayoutGrid,
-  Layers
+  Layers,
+  Activity,
+  Compass,
+  Building2,
+  Code2
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { projectsData } from "@/modules/projects/data/projects.data";
 import { ProjectItem } from "@/modules/projects/types/projects.types";
 import { ProjectModal } from "@/modules/projects/components/ProjectModal";
+import { InteractiveDotGrid } from "./InteractiveDotGrid";
+import { PortfolioMotionColumns } from "./PortfolioMotionColumns";
 import { cn } from "@/lib/utils";
 
-const Portfolio3DCarousel = dynamic(
-  () => import("./Portfolio3DCarousel").then((mod) => mod.Portfolio3DCarousel),
-  {
-    ssr: false,
-    loading: () => <div className="h-[520px] sm:h-[560px] lg:h-[590px] w-full" aria-hidden="true" />
-  }
-);
-
 // Batched animated metric counter hook for ultra-smooth luxury numbers with a single RAF loop
-function useAnimatedMetrics(targets: { projects: number; sqft: number; awards: number }, duration = 1200) {
-  const [counts, setCounts] = useState({ projects: 0, sqft: 0, awards: 0 });
+function useAnimatedMetrics(
+  targets: { total: number; designAndWeb: number; buildAndSpatial: number },
+  duration = 1200
+) {
+  const [counts, setCounts] = useState({ total: 0, designAndWeb: 0, buildAndSpatial: 0 });
 
   useEffect(() => {
     let startTimestamp: number | null = null;
@@ -41,9 +41,9 @@ function useAnimatedMetrics(targets: { projects: number; sqft: number; awards: n
       const easeOut = 1 - Math.pow(1 - progress, 3);
 
       setCounts({
-        projects: Math.floor(easeOut * targets.projects),
-        sqft: Math.floor(easeOut * targets.sqft),
-        awards: Math.floor(easeOut * targets.awards),
+        total: Math.floor(easeOut * targets.total),
+        designAndWeb: Math.floor(easeOut * targets.designAndWeb),
+        buildAndSpatial: Math.floor(easeOut * targets.buildAndSpatial),
       });
 
       if (progress < 1) {
@@ -55,7 +55,7 @@ function useAnimatedMetrics(targets: { projects: number; sqft: number; awards: n
 
     frameId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frameId);
-  }, [targets.projects, targets.sqft, targets.awards, duration]);
+  }, [targets.total, targets.designAndWeb, targets.buildAndSpatial, duration]);
 
   return counts;
 }
@@ -177,17 +177,32 @@ function matchesFuzzyToken(target: string, token: string): boolean {
 }
 
 export function PortfolioView() {
+  const heroSectionRef = useRef<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
-  const [viewMode, setViewMode] = useState<"carousel" | "grid">("carousel");
+  const [viewMode, setViewMode] = useState<"motion" | "grid">("motion");
 
-  // Animated metric counters batched into a single RAF hook
-  const metricTargets = useMemo(() => ({
-    projects: projectsData.length,
-    sqft: 48,
-    awards: 100
-  }), []);
+  // Dynamically derive stats directly from uploaded portfolio projects
+  const metricTargets = useMemo(() => {
+    const total = projectsData.length;
+
+    // Design & Web (Digital Web Development, E-Commerce, 3D CGI Rendering, Brand Identity, Marketing)
+    const designAndWeb = projectsData.filter((p) =>
+      /BRANDING|DEVELOPMENT|RENDERING|MARKETING|DESIGN/i.test(p.categoryTag)
+    ).length;
+
+    // Build & Spatial (Architecture, Civil Construction, Commercial, Interior, Floor Planning)
+    const buildAndSpatial = projectsData.filter((p) =>
+      /ARCHITECTURE|INTERIOR|COMMERCIAL|CONSTRUCTION|FLOOR/i.test(p.categoryTag)
+    ).length;
+
+    return { total, designAndWeb, buildAndSpatial };
+  }, []);
   const metrics = useAnimatedMetrics(metricTargets, 1200);
+
+  // Dynamic discipline balance percentages computed directly from the live portfolio data
+  const digitalPercent = metricTargets.total > 0 ? Math.round((metricTargets.designAndWeb / metricTargets.total) * 100) : 50;
+  const spatialPercent = 100 - digitalPercent;
 
   // Typewriter placeholder hook
   const typedService = useTypewriter(typingServices, 70, 35, 1500);
@@ -219,69 +234,220 @@ export function PortfolioView() {
     <div className="min-h-screen bg-[#fafaf9] text-neutral-900 pb-24 font-sans select-none selection:bg-neutral-900 selection:text-white">
       
       {/* ========================================================================= */}
-      {/* 1. LUXURY MINIMAL HERO: Designed Equally for Mobile, Tablet & Desktop     */}
+      {/* 1. OUT-OF-THIS-WORLD ARCHITECTURAL MONOLITH HERO                          */}
       {/* ========================================================================= */}
-      <section className="pt-6 sm:pt-10 lg:pt-16 pb-6 sm:pb-10 lg:pb-12 px-4 sm:px-8 max-w-7xl mx-auto">
+      <section 
+        ref={heroSectionRef}
+        className="relative pt-6 sm:pt-10 lg:pt-14 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-8 max-w-7xl mx-auto overflow-hidden"
+      >
         
-        {/* Top Backlink & Live Status */}
-        <div className="flex items-center justify-between gap-4 pb-5 sm:pb-8 border-b border-neutral-200/80">
+        {/* Ambient Chromatic Prismatic Light Layer */}
+        <div className="absolute top-0 right-1/4 w-[540px] h-[360px] bg-gradient-to-br from-rose-500/6 via-amber-500/4 to-transparent blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute -top-16 left-10 w-[420px] h-[280px] bg-gradient-to-tr from-sky-500/5 via-indigo-500/3 to-transparent blur-[110px] rounded-full pointer-events-none" />
+
+        {/* Interactive Architectural Canvas Grid with Dynamic Mouse & Touch Physics */}
+        <InteractiveDotGrid containerRef={heroSectionRef} dotSpacing={28} />
+
+        {/* Top Architectural Telemetry Ribbon: Island Navigation & Live Geolocation */}
+        <div className="relative z-10 flex items-center justify-between gap-4 pb-6 sm:pb-8 border-b border-neutral-200/80">
+          
+          {/* Island "Button-in-Button" Navigation Pill */}
           <Link
             href="/"
-            className="group inline-flex items-center gap-2 text-xs font-mono font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
+            className="group inline-flex items-center gap-3 pl-4 pr-1.5 py-1.5 rounded-full bg-neutral-900 hover:bg-neutral-950 text-white border border-neutral-800 text-xs font-mono transition-all duration-300 shadow-sm cursor-pointer select-none active:scale-[0.98]"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-            <span>Home</span>
+            <span className="tracking-widest text-[11px] text-neutral-300 group-hover:text-white transition-colors">
+              HOME
+            </span>
+            <span className="w-6 h-6 rounded-full bg-white/10 group-hover:bg-white text-white group-hover:text-neutral-950 flex items-center justify-center transition-all duration-300 shrink-0">
+              <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform duration-300" />
+            </span>
           </Link>
 
-          <div className="flex items-center gap-2 text-[11px] font-mono text-neutral-500 uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Archive &bull; All Services &amp; Works</span>
+          {/* Minimalist Live Coordinates & Status Telemetry */}
+          <div className="flex items-center gap-3 font-mono text-[11px] text-neutral-400 select-none">
+            <span className="hidden sm:inline-flex items-center gap-2 tracking-wider text-neutral-500">
+              <Compass className="w-3.5 h-3.5 text-neutral-400" />
+              <span>26.14° N, 91.73° E &bull; GUWAHATI HQ</span>
+            </span>
+            <span className="hidden sm:inline text-neutral-300">/</span>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-[10.5px] font-semibold tracking-wider shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE ARCHIVE &bull; {projectsData.length} COMMISSIONS
+            </span>
           </div>
         </div>
 
-        {/* Hero Title & Tablet-Safe Luxury Numbers */}
-        <div className="pt-6 sm:pt-10 lg:pt-12 flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8 lg:gap-12">
+        {/* Main Hero Grid: Monumental Editorial Statement + Sculptural Telemetry Monolith */}
+        <div className="relative z-10 pt-8 sm:pt-12 lg:pt-14 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           
-          {/* Simple, Large, Elegant Title for All Works & Services */}
-          <div className="space-y-2 sm:space-y-3 max-w-2xl">
-            <span className="text-[10px] sm:text-xs font-mono font-bold tracking-[0.25em] text-neutral-400 uppercase block">
-              DESIGN NAYAN &bull; PORTFOLIO
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light text-neutral-950 tracking-tight leading-[1.08]">
-              All our works &amp; <span className="font-semibold text-neutral-900">services.</span>
+          {/* Left Column: Monumental Editorial Statement (Clean, Architectural, Minimalist) */}
+          <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+
+            {/* Monumental Editorial Masterpiece Heading */}
+            <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-[78px] xl:text-[82px] font-extralight tracking-[-0.045em] text-neutral-950 leading-[0.94] select-none">
+              All our <span className="font-semibold text-neutral-950 tracking-tight">works</span>
+              <br />
+              <span className="font-serif italic font-normal text-neutral-400 mr-2 sm:mr-3">&amp;</span>
+              <span className="relative inline-block font-semibold text-neutral-950 tracking-tight">
+                services
+                <span className="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500 ml-1.5 sm:ml-2 align-baseline animate-pulse shadow-[0_0_12px_rgba(244,63,94,0.6)]" />
+              </span>
             </h1>
+
+            {/* Concise Multidisciplinary Paragraph */}
+            <p className="text-base sm:text-lg lg:text-[18px] text-neutral-600 font-light leading-relaxed max-w-xl">
+              A multidisciplinary spatial &amp; digital atelier. We bridge the tangible and virtual&mdash;engineering luxury architecture, turnkey civil construction, and bespoke interiors, while crafting photorealistic 3D CGI, brand systems, and high-performance web platforms.
+            </p>
+
           </div>
 
-          {/* Animated Luxury Numbers: Protected against Tablet Right-Cutoff */}
-          <div className="w-full md:w-auto shrink-0 bg-white/70 md:bg-transparent backdrop-blur-xs md:backdrop-blur-none border border-neutral-200/80 md:border-none rounded-2xl p-4 md:p-0">
-            <div className="grid grid-cols-3 divide-x divide-neutral-200 items-center gap-2 sm:gap-4 md:gap-6 lg:gap-8">
-              <div className="pr-2 sm:pr-4 md:pr-0">
-                <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light font-mono text-neutral-950 tracking-tight block">
-                  {String(metrics.projects).padStart(2, "0")}
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mt-1 whitespace-nowrap">
-                  All Works
-                </span>
+          {/* Right Column: Out-of-This-World Double-Bezel Holographic Monolith Deck */}
+          <div className="lg:col-span-5 xl:col-span-5 w-full">
+            
+            {/* Outer Hardware Chassis (Double-Bezel Layer 1) */}
+            <div className="relative p-2 sm:p-2.5 rounded-[2.25rem] bg-gradient-to-b from-neutral-200/70 via-neutral-100/50 to-neutral-200/80 border border-neutral-300/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)] select-none">
+              
+              {/* Top Hairline Specular Reflection */}
+              <div className="absolute top-0 inset-x-10 h-px bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+              
+              {/* Corner Crosshair Accents */}
+              <span className="absolute top-3 right-3 text-[9px] font-mono text-neutral-400/80 pointer-events-none">+</span>
+              <span className="absolute bottom-3 left-3 text-[9px] font-mono text-neutral-400/80 pointer-events-none">+</span>
+
+              {/* Inner Vitrine Core (Double-Bezel Layer 2) */}
+              <div className="rounded-[calc(2.25rem-0.625rem)] bg-white/95 backdrop-blur-xl p-5 sm:p-6 space-y-4 border border-white/70 shadow-xs relative overflow-hidden">
+                
+                {/* Telemetry Bar Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-100 font-mono text-[10px] text-neutral-400">
+                  <div className="flex items-center gap-1.5 uppercase tracking-wider text-neutral-500 font-semibold">
+                    <Activity className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>PORTFOLIO MATRIX</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-semibold tracking-wider text-[9.5px]">REAL-TIME SYNC</span>
+                  </div>
+                </div>
+
+                {/* Primary Card: Obsidian Master Aggregate (Total Works) */}
+                <div className="relative group/master bg-neutral-950 text-white rounded-2xl p-4 sm:p-5 overflow-hidden border border-neutral-800 shadow-md transition-all duration-300 hover:shadow-lg">
+                  
+                  {/* Subtle Background Glow Inside Card */}
+                  <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-gradient-to-br from-rose-500/25 to-amber-500/20 blur-2xl rounded-full pointer-events-none" />
+                  
+                  {/* Top Line in Master Card */}
+                  <div className="relative z-10 flex items-center justify-between text-[10px] font-mono tracking-widest text-neutral-400 uppercase">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-pulse" />
+                      <span>01 // TOTAL DISPATCH</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white/10 text-neutral-300 text-[9px] font-mono">
+                      LIVE REPOSITORY
+                    </span>
+                  </div>
+
+                  {/* Dynamic Big Number + Label */}
+                  <div className="relative z-10 mt-3 flex items-baseline justify-between">
+                    <div>
+                      <div className="text-4xl xs:text-5xl sm:text-6xl font-light font-mono text-white tracking-tighter leading-none group-hover/master:text-rose-400 transition-colors duration-300">
+                        {String(metrics.total).padStart(2, "0")}
+                      </div>
+                      <div className="text-xs sm:text-sm font-semibold text-neutral-200 mt-1.5 tracking-tight">
+                        All Curated Projects
+                      </div>
+                    </div>
+                    <div className="text-right font-mono text-[10px] text-neutral-400 space-y-0.5">
+                      <div className="text-neutral-300 font-semibold">100% VERIFIED</div>
+                      <div className="text-neutral-500">DYNAMIC ARCHIVE</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Secondary Cards: Dual Core Grid (Digital & Web + Build & Spatial) */}
+                <div className="grid grid-cols-2 gap-3">
+                  
+                  {/* Pod 2: Design & Web (Digital Atelier) */}
+                  <div className="group/pod bg-gradient-to-b from-neutral-50/90 to-white rounded-2xl p-3.5 sm:p-4 border border-neutral-200/90 hover:border-sky-300 hover:shadow-sm transition-all duration-300 relative overflow-hidden">
+                    <div className="flex items-center justify-between text-[9.5px] font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                        <span>02 // DIGITAL</span>
+                      </span>
+                      <span className="text-sky-700 font-bold bg-sky-50 px-1.5 py-0.2 rounded text-[9px]">
+                        {digitalPercent}%
+                      </span>
+                    </div>
+
+                    <div className="text-3xl sm:text-4xl font-light font-mono text-neutral-950 tracking-tighter leading-none group-hover/pod:text-sky-600 transition-colors duration-300">
+                      {String(metrics.designAndWeb).padStart(2, "0")}
+                    </div>
+
+                    <div className="text-xs font-bold text-neutral-950 mt-1 tracking-tight">
+                      Design &amp; Web
+                    </div>
+                    <div className="text-[10px] font-mono text-neutral-400 mt-0.5 truncate">
+                      3D CGI &bull; Web &bull; Brand
+                    </div>
+                  </div>
+
+                  {/* Pod 3: Build & Spatial (Physical Engineering) */}
+                  <div className="group/pod bg-gradient-to-b from-neutral-50/90 to-white rounded-2xl p-3.5 sm:p-4 border border-neutral-200/90 hover:border-amber-300 hover:shadow-sm transition-all duration-300 relative overflow-hidden">
+                    <div className="flex items-center justify-between text-[9.5px] font-mono uppercase tracking-wider text-neutral-400 mb-2">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span>03 // SPATIAL</span>
+                      </span>
+                      <span className="text-amber-800 font-bold bg-amber-50 px-1.5 py-0.2 rounded text-[9px]">
+                        {spatialPercent}%
+                      </span>
+                    </div>
+
+                    <div className="text-3xl sm:text-4xl font-light font-mono text-neutral-950 tracking-tighter leading-none group-hover/pod:text-amber-600 transition-colors duration-300">
+                      {String(metrics.buildAndSpatial).padStart(2, "0")}
+                    </div>
+
+                    <div className="text-xs font-bold text-neutral-950 mt-1 tracking-tight">
+                      Build &amp; Spatial
+                    </div>
+                    <div className="text-[10px] font-mono text-neutral-400 mt-0.5 truncate">
+                      Civil &bull; Arch &bull; Interior
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Bottom Architectural Balance Telemetry Bar */}
+                <div className="pt-2 border-t border-neutral-100 space-y-2">
+                  <div className="flex items-center justify-between text-[9.5px] font-mono text-neutral-400 uppercase tracking-wider">
+                    <span className="flex items-center gap-1 text-sky-700 font-medium">
+                      <span>Digital Atelier ({metrics.designAndWeb})</span>
+                    </span>
+                    <span className="font-semibold text-neutral-600 tracking-widest text-[9px]">
+                      {digitalPercent}% / {spatialPercent}% RATIO
+                    </span>
+                    <span className="flex items-center gap-1 text-amber-700 font-medium">
+                      <span>Spatial Build ({metrics.buildAndSpatial})</span>
+                    </span>
+                  </div>
+
+                  {/* Visual Segmented Architectural Progress Beam */}
+                  <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden flex p-[1px] border border-neutral-200/70">
+                    <div
+                      className="h-full bg-gradient-to-r from-sky-500 to-indigo-600 rounded-l-full transition-all duration-1000 ease-out"
+                      style={{ width: `${digitalPercent}%` }}
+                    />
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-r-full transition-all duration-1000 ease-out"
+                      style={{ width: `${spatialPercent}%` }}
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              <div className="px-2 sm:px-4 md:px-4 lg:px-6">
-                <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light font-mono text-neutral-950 tracking-tight block">
-                  {metrics.sqft}k+
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mt-1 whitespace-nowrap">
-                  Sq.Ft Built
-                </span>
-              </div>
-
-              <div className="pl-2 sm:pl-4 md:pl-4 lg:pl-6">
-                <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light font-mono text-neutral-950 tracking-tight block">
-                  {metrics.awards}%
-                </span>
-                <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block mt-1 whitespace-nowrap">
-                  Bespoke
-                </span>
-              </div>
             </div>
+
           </div>
 
         </div>
@@ -353,31 +519,31 @@ export function PortfolioView() {
               ))}
             </div>
 
-            {/* View Mode Toggle: 3D Infinite Stream vs All Grid */}
+            {/* View Mode Toggle: Motion (3-Column Flow) vs Grid */}
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center p-0.5 rounded-full bg-neutral-200/70 border border-neutral-300/60">
                 <button
-                  onClick={() => setViewMode("carousel")}
+                  onClick={() => setViewMode("motion")}
                   className={cn(
-                    "flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-mono transition-all cursor-pointer",
-                    viewMode === "carousel"
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono transition-all cursor-pointer",
+                    viewMode === "motion"
                       ? "bg-neutral-950 text-white shadow-xs font-medium"
                       : "text-neutral-600 hover:text-neutral-950"
                   )}
-                  title="3D Infinite Stream"
+                  title="3-Column Infinite Motion Stream"
                 >
-                  <Layers className="w-3 h-3" />
-                  <span>3D Carousel</span>
+                  <Activity className="w-3 h-3 text-rose-500" />
+                  <span>Motion</span>
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
                   className={cn(
-                    "flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-mono transition-all cursor-pointer",
+                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono transition-all cursor-pointer",
                     viewMode === "grid"
                       ? "bg-neutral-950 text-white shadow-xs font-medium"
                       : "text-neutral-600 hover:text-neutral-950"
                   )}
-                  title="Grid Showcase"
+                  title="All Works Grid Showcase"
                 >
                   <LayoutGrid className="w-3 h-3" />
                   <span>Grid</span>
@@ -400,7 +566,7 @@ export function PortfolioView() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. SHOWCASE: INFINITE 3D CAROUSEL (DEFAULT) OR APP-NATIVE GRID             */}
+      {/* 3. SHOWCASE: 3-COLUMN COUNTER-FLOW MOTION (DEFAULT) OR APP-NATIVE GRID    */}
       {/* ========================================================================= */}
       <main className="pt-4 sm:pt-6">
         
@@ -422,9 +588,9 @@ export function PortfolioView() {
               Reset Search
             </button>
           </div>
-        ) : viewMode === "carousel" ? (
-          /* Primary 3D Infinite Carousel (Left to Right, 3D Depth & Feel) */
-          <Portfolio3DCarousel
+        ) : viewMode === "motion" ? (
+          /* Primary 3-Column Counter-Flow Infinite Motion Showcase */
+          <PortfolioMotionColumns
             projects={filteredProjects}
             onSelectProject={(project) => setSelectedProject(project)}
           />

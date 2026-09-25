@@ -48,3 +48,4 @@ export const footerNav = [
   { title: "ABOUT", href: "/about" },
   { title: "CONTACT", href: "/contact" },
 ];
+
