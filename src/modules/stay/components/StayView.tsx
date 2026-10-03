@@ -13,14 +13,11 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
   CheckCircle2,
   BedDouble,
   Bath,
   Maximize2,
-  Users,
   MessageSquare,
-  ArrowLeft,
   X
 } from "lucide-react";
 import { 
@@ -39,6 +36,24 @@ export function StayView() {
   // Selected modals for active card preview
   const [selectedRental, setSelectedRental] = useState<RentalProperty | null>(null);
   const [selectedStay, setSelectedStay] = useState<StayProperty | null>(null);
+
+  const [rentalsList, setRentalsList] = useState<RentalProperty[]>(rentalPropertiesNearYou);
+  const [hotelsList, setHotelsList] = useState<StayProperty[]>(vacationHomesAndHotels);
+
+  React.useEffect(() => {
+    try {
+      const savedRentals = localStorage.getItem("dn_stay_rentals");
+      if (savedRentals) {
+        const parsed = JSON.parse(savedRentals);
+        if (Array.isArray(parsed) && parsed.length > 0) setRentalsList(parsed);
+      }
+      const savedHotels = localStorage.getItem("dn_stay_hotels");
+      if (savedHotels) {
+        const parsed = JSON.parse(savedHotels);
+        if (Array.isArray(parsed) && parsed.length > 0) setHotelsList(parsed);
+      }
+    } catch {}
+  }, []);
 
   // Close modal on Escape key and prevent background scroll while open
   React.useEffect(() => {
@@ -69,7 +84,7 @@ export function StayView() {
     const q = searchQuery.toLowerCase().trim();
     const words = q.split(/\s+/).filter(Boolean);
 
-    return rentalPropertiesNearYou.filter((rental) => {
+    return rentalsList.filter((rental) => {
       const matchesLocation =
         selectedLocation === "All Locations" || rental.city === selectedLocation;
       if (!matchesLocation) return false;
@@ -95,14 +110,14 @@ export function StayView() {
         words.some((word) => searchableText.includes(word))
       );
     });
-  }, [searchQuery, selectedLocation]);
+  }, [rentalsList, searchQuery, selectedLocation]);
 
   // Dynamic Fuzzy Multi-keyword Matching for Vacation Stays
   const filteredStays = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     const words = q.split(/\s+/).filter(Boolean);
 
-    return vacationHomesAndHotels.filter((stay) => {
+    return hotelsList.filter((stay) => {
       const matchesLocation =
         selectedLocation === "All Locations" || stay.city === selectedLocation;
       if (!matchesLocation) return false;
@@ -127,7 +142,7 @@ export function StayView() {
         words.some((word) => searchableText.includes(word))
       );
     });
-  }, [searchQuery, selectedLocation]);
+  }, [hotelsList, searchQuery, selectedLocation]);
 
   const topRentals = filteredRentals.slice(0, 5);
   const topStays = filteredStays.slice(0, 5);

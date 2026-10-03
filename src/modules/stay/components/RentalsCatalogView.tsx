@@ -8,18 +8,11 @@ import {
   MapPin, 
   ArrowLeft, 
   ArrowRight, 
-  Building2, 
   BedDouble, 
   Bath, 
   Maximize2, 
   CheckCircle2, 
-  ShieldCheck, 
   MessageSquare, 
-  PhoneCall,
-  Calendar,
-  Sparkles,
-  SlidersHorizontal,
-  Home,
   X
 } from "lucide-react";
 import { rentalPropertiesNearYou, stayLocations, RentalProperty } from "../data/stay.data";
@@ -59,10 +52,22 @@ export function RentalsCatalogView() {
     };
   }, [selectedProperty]);
 
+  const [rentalsList, setRentalsList] = useState<RentalProperty[]>(rentalPropertiesNearYou);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dn_stay_rentals");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setRentalsList(parsed);
+      }
+    } catch {}
+  }, []);
+
   const propertyTypes = ["ALL", "3 BHK Apartment", "2 BHK Builder Floor", "4 BHK Luxury Villa", "Duplex Penthouse"];
   const furnishingTypes = ["ALL", "Fully Furnished", "Semi-Furnished", "Unfurnished"];
 
-  const filteredRentals = rentalPropertiesNearYou.filter((rental) => {
+  const filteredRentals = rentalsList.filter((rental) => {
     const matchesSearch =
       rental.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rental.locality.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -132,39 +132,44 @@ export function CreatorProfileModal({
             <div className="md:col-span-4 space-y-4">
               {/* Media Card with Showreel Toggle */}
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-neutral-950 group shadow-md border border-neutral-200">
-                <Image
-                  src={creator.featuredImage}
-                  alt={creator.name}
-                  fill
-                  className="object-cover object-top filter contrast-[1.05] transition-transform duration-500 group-hover:scale-102"
-                  sizes="(max-width: 768px) 100vw, 320px"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                {isPlayingDemo && (creator.videoPreviewUrl || (creator.featuredImage && (creator.featuredImage.startsWith("data:video/") || /\.(mp4|webm|mov|ogg)($|\?)/i.test(creator.featuredImage)))) ? (
+                  <video
+                    src={creator.videoPreviewUrl || creator.featuredImage}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <Image
+                      src={creator.featuredImage}
+                      alt={creator.name}
+                      fill
+                      unoptimized
+                      className="object-cover object-top filter contrast-[1.05] transition-transform duration-500 group-hover:scale-102"
+                      sizes="(max-width: 768px) 100vw, 320px"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
-                {/* Showreel Interactive Play/Pause Button */}
-                <div
-                  onClick={() => setIsPlayingDemo(!isPlayingDemo)}
-                  className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-black/20 hover:bg-black/40 transition-colors"
-                >
-                  <div className="w-13 h-13 rounded-full bg-red-600 hover:scale-110 active:scale-95 text-white flex items-center justify-center shadow-xl transition-all">
-                    {isPlayingDemo ? (
-                      <Pause className="w-5 h-5 fill-current" />
-                    ) : (
-                      <Play className="w-5 h-5 fill-current ml-0.5" />
-                    )}
-                  </div>
-                  <span className="mt-2.5 text-[11px] font-semibold text-white tracking-wide bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
-                    {isPlayingDemo ? "Pause Reel Preview" : "Play Verified Reel"}
-                  </span>
-                </div>
-
-                {/* Simulated Reel Banner */}
-                {isPlayingDemo && (
-                  <div className="absolute top-3 left-3 right-3 bg-red-600/95 backdrop-blur-xs text-white text-[10px] font-medium py-1 px-2.5 rounded-lg shadow-sm flex items-center justify-between">
-                    <span>4K High-Retention Reel</span>
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  </div>
+                    {/* Showreel Interactive Play/Pause Button */}
+                    <div
+                      onClick={() => setIsPlayingDemo(!isPlayingDemo)}
+                      className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-black/20 hover:bg-black/40 transition-colors"
+                    >
+                      <div className="w-13 h-13 rounded-full bg-red-600 hover:scale-110 active:scale-95 text-white flex items-center justify-center shadow-xl transition-all">
+                        {isPlayingDemo ? (
+                          <Pause className="w-5 h-5 fill-current" />
+                        ) : (
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        )}
+                      </div>
+                      <span className="mt-2.5 text-[11px] font-semibold text-white tracking-wide bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm border border-white/10">
+                        {isPlayingDemo ? "Pause Reel Preview" : "Play Verified Reel"}
+                      </span>
+                    </div>
+                  </>
                 )}
 
                 {/* Creator Handle Overlay */}

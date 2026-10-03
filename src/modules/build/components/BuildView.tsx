@@ -19,12 +19,11 @@ import {
   ChevronRight, 
   ChevronDown,
   Layers,
-  Sparkles,
-  Award,
   Compass
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { buildServicesData, materialCategoriesData, buildWorkflowSteps } from "../data/build.data";
+import { BuildServiceDetail, MaterialCategory } from "../types/build.types";
 
 const BuildHeroCanvas = dynamic(
   () => import("./BuildHeroCanvas").then((mod) => mod.BuildHeroCanvas),
@@ -36,6 +35,30 @@ const BuildHeroCanvas = dynamic(
 
 export function BuildView() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [services, setServices] = useState<BuildServiceDetail[]>(buildServicesData);
+  const [materials, setMaterials] = useState<MaterialCategory[]>(materialCategoriesData);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_build_services");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setServices(parsed);
+        }
+      } catch {}
+    }
+
+    const savedMaterials = localStorage.getItem("dn_build_materials");
+    if (savedMaterials) {
+      try {
+        const parsedMaterials = JSON.parse(savedMaterials);
+        if (Array.isArray(parsedMaterials) && parsedMaterials.length > 0) {
+          setMaterials(parsedMaterials);
+        }
+      } catch {}
+    }
+  }, []);
 
   // ==========================================
   // 1. ROTATING TYPING ANIMATION FOR BUILD HERO
@@ -103,9 +126,9 @@ export function BuildView() {
   // Dynamic search filtering
   const filteredServices = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return buildServicesData;
+    if (!q) return services;
 
-    return buildServicesData.filter((service) => {
+    return services.filter((service) => {
       return (
         service.title.toLowerCase().includes(q) ||
         service.description.toLowerCase().includes(q) ||
@@ -114,7 +137,7 @@ export function BuildView() {
         service.specs.some((s) => s.value.toLowerCase().includes(q))
       );
     });
-  }, [searchQuery]);
+  }, [searchQuery, services]);
 
   // Horizontal scroll ref
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +163,12 @@ export function BuildView() {
         return <Calculator {...iconProps} />;
       case "Briefcase":
         return <Briefcase {...iconProps} />;
+      case "ShieldCheck":
+        return <ShieldCheck {...iconProps} />;
+      case "Layers":
+        return <Layers {...iconProps} />;
+      case "Compass":
+        return <Compass {...iconProps} />;
       default:
         return <HardHat {...iconProps} />;
     }
@@ -401,7 +430,7 @@ export function BuildView() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5 lg:gap-6">
-            {materialCategoriesData.map((mat, index) => (
+            {materials.map((mat, index) => (
               <div
                 key={index}
                 className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-neutral-950 border border-neutral-800 space-y-4 flex flex-col justify-between hover:border-amber-500/40 transition-colors shadow-xs"

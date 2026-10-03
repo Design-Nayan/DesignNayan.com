@@ -126,6 +126,19 @@ export function CreatorsSearchView() {
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
   const [quickViewCreator, setQuickViewCreator] = useState<Creator | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [allCreators, setAllCreators] = useState<Creator[]>(CREATORS_DATA);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_creators");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAllCreators(parsed);
+        }
+      } catch {}
+    }
+  }, []);
 
   const filterPopoverRef = useRef<HTMLDivElement>(null);
   const suggestedScrollRef = useRef<HTMLDivElement>(null);
@@ -147,8 +160,8 @@ export function CreatorsSearchView() {
 
   // Selected creators objects
   const selectedCreators = useMemo(() => {
-    return CREATORS_DATA.filter((c) => selectedCreatorIds.includes(c.id));
-  }, [selectedCreatorIds]);
+    return allCreators.filter((c) => selectedCreatorIds.includes(c.id));
+  }, [allCreators, selectedCreatorIds]);
 
   const handleToggleSelect = (creator: Creator) => {
     setSelectedCreatorIds((prev) =>
@@ -198,8 +211,8 @@ export function CreatorsSearchView() {
 
   // Top 6 Suggested / Trending Creators for the small horizontal section
   const suggestedCreators = useMemo(() => {
-    return CREATORS_DATA.filter((c) => c.verified).slice(0, 6);
-  }, []);
+    return allCreators.filter((c) => c.verified).slice(0, 6);
+  }, [allCreators]);
 
   const scrollSuggested = (direction: "left" | "right") => {
     if (suggestedScrollRef.current) {
@@ -290,7 +303,7 @@ export function CreatorsSearchView() {
 
   // Filtered and Ranked Creators
   const filteredCreators = useMemo(() => {
-    let list = CREATORS_DATA;
+    let list = allCreators;
 
     // Category Pill Filter
     if (selectedCategory !== "All") {
@@ -347,6 +360,7 @@ export function CreatorsSearchView() {
     selectedTier,
     selectedBudget,
     verifiedOnly,
+    allCreators,
   ]);
 
   return (

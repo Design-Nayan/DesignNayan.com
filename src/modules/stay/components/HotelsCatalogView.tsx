@@ -13,13 +13,8 @@ import {
   BedDouble, 
   Bath, 
   CheckCircle2, 
-  ShieldCheck, 
   Hotel, 
-  PhoneCall, 
   MessageSquare, 
-  SlidersHorizontal,
-  Calendar,
-  Sparkles,
   X
 } from "lucide-react";
 import { vacationHomesAndHotels, stayLocations, StayProperty } from "../data/stay.data";
@@ -58,9 +53,21 @@ export function HotelsCatalogView() {
     };
   }, [selectedProperty]);
 
+  const [hotelsList, setHotelsList] = useState<StayProperty[]>(vacationHomesAndHotels);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dn_stay_hotels");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) setHotelsList(parsed);
+      }
+    } catch {}
+  }, []);
+
   const categories = ["ALL", "Vacation Home", "Boutique Hotel", "Luxury Resort", "Architectural Homestay"];
 
-  const filteredProperties = vacationHomesAndHotels.filter((property) => {
+  const filteredProperties = hotelsList.filter((property) => {
     const matchesSearch =
       property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||

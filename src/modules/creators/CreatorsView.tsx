@@ -25,7 +25,20 @@ export function CreatorsView() {
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
   const [quickViewCreator, setQuickViewCreator] = useState<Creator | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [allCreators, setAllCreators] = useState<Creator[]>(CREATORS_DATA);
   const lenisRef = React.useRef<Lenis | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_creators");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAllCreators(parsed);
+        }
+      } catch {}
+    }
+  }, []);
 
   useEffect(() => {
     // 1. Initialize Lenis for butter-smooth, luxury flowy momentum scroll
@@ -75,7 +88,7 @@ export function CreatorsView() {
   }, [isBookingOpen, quickViewCreator]);
 
   // Selected creators objects
-  const selectedCreators = CREATORS_DATA.filter((c) =>
+  const selectedCreators = allCreators.filter((c) =>
     selectedCreatorIds.includes(c.id)
   );
 
@@ -121,7 +134,7 @@ export function CreatorsView() {
 
       {/* 2. Editorial Statement + 3-Portrait Row (Inspired by Reference Section 2) */}
       <StatementEditorial
-        creators={CREATORS_DATA}
+        creators={allCreators}
         onSelectCreator={(creator) => setQuickViewCreator(creator)}
       />
 
@@ -132,7 +145,7 @@ export function CreatorsView() {
 
       {/* 4. Complete Creator Discovery Facility (Search, Filters, Sort, Creator Cards) */}
       <CreatorDiscovery
-        creators={CREATORS_DATA}
+        creators={allCreators}
         selectedCreatorIds={selectedCreatorIds}
         onToggleSelect={handleToggleSelect}
         onQuickView={(creator) => setQuickViewCreator(creator)}
@@ -141,7 +154,7 @@ export function CreatorsView() {
 
       {/* 5. Interactive Client Matchmaker: In-page Section */}
       <SmartMatchmaker
-        creators={CREATORS_DATA}
+        creators={allCreators}
         selectedCreatorIds={selectedCreatorIds}
         onToggleSelect={handleToggleSelect}
         onSelectCreator={(creator) => setQuickViewCreator(creator)}
@@ -150,7 +163,7 @@ export function CreatorsView() {
 
       {/* 6. Second Statement + Infinite Moving Video Carousel */}
       <SecondStatement
-        creators={CREATORS_DATA}
+        creators={allCreators}
         onSelectCreator={(creator) => setQuickViewCreator(creator)}
         onExploreRoster={scrollToDirectory}
         onBookRoster={() => setIsBookingOpen(true)}

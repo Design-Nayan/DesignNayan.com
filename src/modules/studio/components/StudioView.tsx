@@ -28,11 +28,9 @@ import {
   SlidersHorizontal,
   FileText,
   ShieldCheck,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Info
+  ChevronDown
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { studioServicesData } from "../data/studio.data";
@@ -120,6 +118,19 @@ const serviceKeywordsMap: Record<string, string[]> = {
 
 export function StudioView() {
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [services, setServices] = useState<StudioServiceDetail[]>(studioServicesData);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_studio_services");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setServices(parsed);
+        }
+      } catch {}
+    }
+  }, []);
 
   // ==========================================
   // 1. ROTATING TYPING ANIMATION (Smooth & Fluid)
@@ -193,7 +204,7 @@ export function StudioView() {
   const filteredServices = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
-    return studioServicesData.filter((service) => {
+    return services.filter((service) => {
       if (!q) return true;
 
       // Exact substring matches in core fields
@@ -229,7 +240,7 @@ export function StudioView() {
         matchesWordTokens
       );
     });
-  }, [searchQuery]);
+  }, [searchQuery, services]);
 
   // Group services by category for horizontal scroll sections
   const categorizedServices = useMemo(() => {

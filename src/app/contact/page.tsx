@@ -1,10 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
-import { siteConfig } from "@/config/site";
+import React, { useState, useEffect } from "react";
+import { initialContactData } from "@/modules/contact/data/contact.data";
+import { ContactDetailsData } from "@/modules/contact/types/contact.types";
 import { Phone, Mail, MapPin, Send, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {
+  const [contactInfo, setContactInfo] = useState<ContactDetailsData>(initialContactData);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dn_contact_details");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          setContactInfo((prev) => ({ ...prev, ...parsed }));
+        }
+      }
+    } catch {}
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -71,7 +86,7 @@ export default function ContactPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Office Information</h2>
             <p className="text-neutral-400 text-sm leading-relaxed">
-              We operate across Assam, Northeast India, and provide digital solutions globally.
+              {contactInfo.regionSubtext}
             </p>
           </div>
 
@@ -85,10 +100,10 @@ export default function ContactPage() {
                   Call / WhatsApp
                 </div>
                 <a
-                  href={siteConfig.contact.whatsapp}
+                  href={contactInfo.whatsapp}
                   className="text-base font-bold text-white hover:text-rose-400 transition-colors"
                 >
-                  {siteConfig.contact.phone}
+                  {contactInfo.phoneDisplay || contactInfo.phone}
                 </a>
               </div>
             </div>
@@ -102,10 +117,10 @@ export default function ContactPage() {
                   Email
                 </div>
                 <a
-                  href={`mailto:${siteConfig.contact.email}`}
+                  href={`mailto:${contactInfo.email}`}
                   className="text-base font-bold text-white hover:text-rose-400 transition-colors"
                 >
-                  {siteConfig.contact.email}
+                  {contactInfo.email}
                 </a>
               </div>
             </div>
@@ -119,7 +134,7 @@ export default function ContactPage() {
                   Office Location
                 </div>
                 <div className="text-base font-bold text-white">
-                  {siteConfig.contact.address}
+                  {contactInfo.address}
                 </div>
               </div>
             </div>
@@ -127,7 +142,7 @@ export default function ContactPage() {
 
           <div className="pt-6 border-t border-neutral-800">
             <a
-              href={siteConfig.contact.whatsapp}
+              href={contactInfo.whatsapp}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-colors shadow-md"
