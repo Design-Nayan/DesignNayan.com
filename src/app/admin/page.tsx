@@ -65,6 +65,7 @@ import {
   VolumeX,
   Smartphone,
   Sliders,
+  Loader2,
 } from "lucide-react";
 
 import { projectsData as initialProjects } from "@/modules/projects/data/projects.data";
@@ -296,8 +297,63 @@ export const CREATOR_DELIVERABLES: DeliverableFormat[] = [
 
 export const isVideoMedia = (url?: string): boolean => {
   if (!url) return false;
-  return url.startsWith("data:video/") || /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(url);
+  const clean = url.trim().toLowerCase();
+  return (
+    clean.startsWith("data:video/") ||
+    clean.includes("youtube.com") ||
+    clean.includes("youtu.be") ||
+    clean.includes("vimeo.com") ||
+    /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(clean)
+  );
 };
+
+export const getEmbedUrl = (url?: string): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const ytMatch = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+  );
+  if (ytMatch) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}`;
+  }
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1`;
+  }
+  return null;
+};
+
+const compressImageFile = (file: File, maxWidth = 1600, quality = 0.82): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 
 type PaymentStatusFilter = "ALL" | "PAID" | "PENDING_ONLY";
 
@@ -402,6 +458,8 @@ export default function AdminDashboardPage() {
 
   // About Page State
   const [aboutData, setAboutData] = useState<AboutPageData>(initialAboutData);
+  const [isSavingAbout, setIsSavingAbout] = useState(false);
+
 
   // Contact Details State
   const [contactData, setContactData] = useState<ContactDetailsData>(initialContactData);
@@ -787,13 +845,26 @@ export default function AdminDashboardPage() {
       .catch((err) => console.error("Error loading finances from DB:", err));
 
     // Live Database Sync: About Data from PostgreSQL
-    fetch("/api/about/", { credentials: "include" })
+    fetch("/api/about", { credentials: "include", cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data && data.success && data.data) {
-          setAboutData(data.data);
+          const merged = {
+            ...initialAboutData,
+            ...data.data,
+            stats: Array.isArray(data.data.stats) && data.data.stats.length > 0 ? data.data.stats : initialAboutData.stats,
+            philosophyHighlights:
+              Array.isArray(data.data.philosophyHighlights) && data.data.philosophyHighlights.length > 0
+                ? data.data.philosophyHighlights
+                : initialAboutData.philosophyHighlights,
+            processSteps:
+              Array.isArray(data.data.processSteps) && data.data.processSteps.length > 0
+                ? data.data.processSteps
+                : initialAboutData.processSteps,
+          };
+          setAboutData(merged);
           try {
-            localStorage.setItem("dn_about_data", JSON.stringify(data.data));
+            localStorage.setItem("dn_about_data", JSON.stringify(merged));
           } catch {}
         }
       })
@@ -915,21 +986,44 @@ export default function AdminDashboardPage() {
     };
   }, [isAuthenticated, sessionTimeout]);
 
-    // Save About page changes to LocalStorage and PostgreSQL database
-  const updateAboutDataWithStorage = (data: AboutPageData) => {
+  // Save About page changes to LocalStorage and PostgreSQL database
+  const updateAboutDataWithStorage = async (data: AboutPageData): Promise<boolean> => {
     setAboutData(data);
     try {
       localStorage.setItem("dn_about_data", JSON.stringify(data));
     } catch {}
-    fetch("/api/about/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-auth": "true",
-      },
-      credentials: "include",
-      body: JSON.stringify(data),
-    }).catch((err) => console.error("Error saving about data to DB:", err));
+
+    try {
+      const res = await fetch("/api/about", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-auth": "true",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json().catch(() => null);
+
+      if (res.ok && json?.success) {
+        showToast("About page saved to database & published live!");
+        return true;
+      } else {
+        const errorMsg =
+          json?.error ||
+          (res.status === 413
+            ? "File or media is too large. Please use a direct image/video URL."
+            : "Server error saving changes");
+        showToast(`Save failed: ${errorMsg}`);
+        console.error("About save failed:", json);
+        return false;
+      }
+    } catch (err) {
+      console.error("Error saving about data to DB:", err);
+      showToast("Network error: Could not reach server to save About page");
+      return false;
+    }
   };
 
   // Save Contact details changes to LocalStorage
@@ -2444,43 +2538,69 @@ export default function AdminDashboardPage() {
   };
 
   // Media Upload Handlers for About Page (Photos & Videos)
+  const processAboutMediaFile = async (file: File) => {
+    const isVideo = file.type.startsWith("video/");
+    if (isVideo) {
+      if (file.size > 4 * 1024 * 1024) {
+        const mb = (file.size / (1024 * 1024)).toFixed(1);
+        alert(
+          `Video file size (${mb} MB) exceeds Vercel's 4.5MB serverless limit.\n\nFor high-performance HD streaming, please paste a YouTube, Vimeo, or direct video URL into the "Direct Media URL" field below, or compress the video under 4MB.`
+        );
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const url = event.target.result as string;
+          setAboutData((prev) => ({
+            ...prev,
+            mediaUrl: url,
+            mediaType: "video",
+          }));
+          showToast("Video loaded into preview");
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      showToast("Optimizing photo for web...");
+      try {
+        const compressed = await compressImageFile(file);
+        setAboutData((prev) => ({
+          ...prev,
+          mediaUrl: compressed,
+          mediaType: "image",
+        }));
+        showToast("Photo optimized & loaded into preview");
+      } catch (err) {
+        console.error("Error compressing image:", err);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setAboutData((prev) => ({
+              ...prev,
+              mediaUrl: event.target?.result as string,
+              mediaType: "image",
+            }));
+            showToast("Photo loaded into preview");
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   const handleAboutMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isVideo = file.type.startsWith("video/");
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const url = event.target.result as string;
-        setAboutData((prev) => ({
-          ...prev,
-          mediaUrl: url,
-          mediaType: isVideo ? "video" : "image",
-        }));
-        showToast(isVideo ? "Video loaded into preview" : "Photo loaded into preview");
-      }
-    };
-    reader.readAsDataURL(file);
+    processAboutMediaFile(file);
+    e.target.value = "";
   };
 
   const handleAboutMediaDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-    const isVideo = file.type.startsWith("video/");
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const url = event.target.result as string;
-        setAboutData((prev) => ({
-          ...prev,
-          mediaUrl: url,
-          mediaType: isVideo ? "video" : "image",
-        }));
-        showToast(isVideo ? "Video loaded into preview" : "Photo loaded into preview");
-      }
-    };
-    reader.readAsDataURL(file);
+    processAboutMediaFile(file);
   };
 
   // Export Data as JSON
@@ -4782,10 +4902,14 @@ export default function AdminDashboardPage() {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                updateAboutDataWithStorage(aboutData);
-                showToast("About page updated successfully");
+                setIsSavingAbout(true);
+                try {
+                  await updateAboutDataWithStorage(aboutData);
+                } finally {
+                  setIsSavingAbout(false);
+                }
               }}
               className="space-y-6"
             >
@@ -4865,8 +4989,17 @@ export default function AdminDashboardPage() {
 
                 {aboutData.mediaUrl ? (
                   <div className="relative rounded-2xl overflow-hidden border border-stone-200 bg-stone-950 aspect-[16/9] max-h-60 group">
-                    {aboutData.mediaType === "video" || isVideoMedia(aboutData.mediaUrl) ? (
+                    {getEmbedUrl(aboutData.mediaUrl) ? (
+                      <iframe
+                        src={getEmbedUrl(aboutData.mediaUrl)!}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title="About Video Preview"
+                      />
+                    ) : (aboutData.mediaType === "video" || isVideoMedia(aboutData.mediaUrl)) ? (
                       <video
+                        key={aboutData.mediaUrl}
                         src={aboutData.mediaUrl}
                         controls
                         autoPlay
@@ -4877,6 +5010,7 @@ export default function AdminDashboardPage() {
                       />
                     ) : (
                       <img
+                        key={aboutData.mediaUrl}
                         src={aboutData.mediaUrl}
                         alt="About media preview"
                         className="w-full h-full object-cover"
@@ -4885,7 +5019,7 @@ export default function AdminDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setAboutData({ ...aboutData, mediaUrl: "" })}
-                      className="absolute top-3 right-3 p-1.5 rounded-full bg-stone-900/80 text-white hover:bg-stone-900 transition-colors cursor-pointer"
+                      className="absolute top-3 right-3 p-1.5 rounded-full bg-stone-900/80 text-white hover:bg-stone-900 transition-colors cursor-pointer z-10"
                       title="Remove Media"
                     >
                       <X className="w-4 h-4" />
@@ -4908,7 +5042,7 @@ export default function AdminDashboardPage() {
                       Drop local {aboutData.mediaType === "video" ? "video" : "photo"} here, or click to upload
                     </p>
                     <p className="text-[10px] text-stone-400 mt-0.5">
-                      Supports JPG, PNG, WebP, MP4, WebM, MOV from your device
+                      Photos are auto-optimized for web. Video files under 4MB supported directly.
                     </p>
                   </div>
                 )}
@@ -4918,10 +5052,66 @@ export default function AdminDashboardPage() {
                   <input
                     type="url"
                     value={aboutData.mediaUrl}
-                    onChange={(e) => setAboutData({ ...aboutData, mediaUrl: e.target.value })}
-                    placeholder="https://images.unsplash.com/... or https://.../video.mp4"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const isVid = isVideoMedia(val) || Boolean(getEmbedUrl(val));
+                      const isImg =
+                        val.startsWith("data:image/") ||
+                        val.includes("unsplash.com") ||
+                        /\.(jpg|jpeg|png|webp|avif|gif)($|\?)/i.test(val);
+                      setAboutData({
+                        ...aboutData,
+                        mediaUrl: val,
+                        ...(isVid ? { mediaType: "video" } : isImg ? { mediaType: "image" } : {}),
+                      });
+                    }}
+                    placeholder="https://images.unsplash.com/... or https://www.youtube.com/watch?v=... or .mp4"
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-stone-50/80 border border-stone-200/80 text-stone-900 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400"
                   />
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[10px] text-stone-400">Quick presets:</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAboutData({
+                          ...aboutData,
+                          mediaType: "image",
+                          mediaUrl:
+                            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1000&auto=format&fit=crop&q=80",
+                        })
+                      }
+                      className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-[10px] text-stone-600 cursor-pointer transition-colors"
+                    >
+                      Studio Photo (Default)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAboutData({
+                          ...aboutData,
+                          mediaType: "video",
+                          mediaUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                        })
+                      }
+                      className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-[10px] text-stone-600 cursor-pointer transition-colors"
+                    >
+                      YouTube Demo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAboutData({
+                          ...aboutData,
+                          mediaType: "video",
+                          mediaUrl:
+                            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                        })
+                      }
+                      className="px-2 py-0.5 rounded-md bg-stone-100 hover:bg-stone-200 text-[10px] text-stone-600 cursor-pointer transition-colors"
+                    >
+                      Sample MP4 Video
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -5129,9 +5319,17 @@ export default function AdminDashboardPage() {
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-full bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs transition-all shadow-xs cursor-pointer"
+                  disabled={isSavingAbout}
+                  className="px-6 py-2.5 rounded-full bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white font-medium text-xs transition-all shadow-xs cursor-pointer flex items-center gap-2"
                 >
-                  Save About Page Changes
+                  {isSavingAbout ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving to Database...</span>
+                    </>
+                  ) : (
+                    <span>Save About Page Changes</span>
+                  )}
                 </button>
               </div>
             </form>

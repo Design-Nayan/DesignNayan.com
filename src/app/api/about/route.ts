@@ -11,19 +11,46 @@ export async function GET() {
       where: { key: "about_page" },
     });
 
-    if (record?.data) {
-      return NextResponse.json({
-        success: true,
-        source: "database",
-        data: record.data,
-      });
+    if (record?.data && typeof record.data === "object") {
+      const dbData = record.data as Record<string, unknown>;
+      const merged = {
+        ...initialAboutData,
+        ...dbData,
+        stats: Array.isArray(dbData.stats) && dbData.stats.length > 0 ? dbData.stats : initialAboutData.stats,
+        philosophyHighlights: Array.isArray(dbData.philosophyHighlights) && dbData.philosophyHighlights.length > 0 ? dbData.philosophyHighlights : initialAboutData.philosophyHighlights,
+        processSteps: Array.isArray(dbData.processSteps) && dbData.processSteps.length > 0 ? dbData.processSteps : initialAboutData.processSteps,
+      };
+
+      return NextResponse.json(
+        {
+          success: true,
+          source: "database",
+          data: merged,
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      source: "fallback",
-      data: initialAboutData,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        source: "fallback",
+        data: initialAboutData,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error reading about page from DB:", error);
     return NextResponse.json({
@@ -61,12 +88,17 @@ async function handleAboutUpdate(req: NextRequest) {
       );
     }
 
+    const merged = {
+      ...initialAboutData,
+      ...payload,
+    };
+
     const updated = await db.siteContent.upsert({
       where: { key: "about_page" },
-      update: { data: payload },
+      update: { data: merged },
       create: {
         key: "about_page",
-        data: payload,
+        data: merged,
       },
     });
 

@@ -7,23 +7,36 @@ import { AboutPageData } from "../types/about.types";
 
 const isVideoUrl = (url?: string): boolean => {
   if (!url) return false;
+  const clean = url.trim().toLowerCase();
   return (
-    url.startsWith("data:video/") ||
-    url.startsWith("/uploads/") ||
-    /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(url) ||
-    url.includes("youtube.com") ||
-    url.includes("youtu.be") ||
-    url.includes("vimeo.com")
+    clean.startsWith("data:video/") ||
+    clean.includes("youtube.com") ||
+    clean.includes("youtu.be") ||
+    clean.includes("vimeo.com") ||
+    /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(clean)
+  );
+};
+
+const isImageUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const clean = url.trim().toLowerCase();
+  return (
+    clean.startsWith("data:image/") ||
+    clean.includes("unsplash.com") ||
+    /\.(jpg|jpeg|png|webp|avif|gif|svg)($|\?)/i.test(clean)
   );
 };
 
 const getEmbedUrl = (url?: string): string | null => {
   if (!url) return null;
-  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  const trimmed = url.trim();
+  const ytMatch = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+  );
   if (ytMatch) {
     return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}`;
   }
-  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   if (vimeoMatch) {
     return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1`;
   }
@@ -32,15 +45,33 @@ const getEmbedUrl = (url?: string): string | null => {
 
 export function AboutView() {
   const [data, setData] = useState<AboutPageData>(initialAboutData);
+  const [mediaError, setMediaError] = useState(false);
 
   useEffect(() => {
+    const mergeData = (incoming: any): AboutPageData => {
+      if (!incoming || typeof incoming !== "object") return initialAboutData;
+      return {
+        ...initialAboutData,
+        ...incoming,
+        stats: Array.isArray(incoming.stats) && incoming.stats.length > 0 ? incoming.stats : initialAboutData.stats,
+        philosophyHighlights:
+          Array.isArray(incoming.philosophyHighlights) && incoming.philosophyHighlights.length > 0
+            ? incoming.philosophyHighlights
+            : initialAboutData.philosophyHighlights,
+        processSteps:
+          Array.isArray(incoming.processSteps) && incoming.processSteps.length > 0
+            ? incoming.processSteps
+            : initialAboutData.processSteps,
+      };
+    };
+
     const loadData = () => {
       try {
         const saved = localStorage.getItem("dn_about_data");
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === "object") {
-            setData(parsed);
+            setData(mergeData(parsed));
           }
         }
       } catch {}
@@ -48,14 +79,16 @@ export function AboutView() {
 
     loadData();
 
-    // Fetch live from database so all visitors see the owner's updates
-    fetch("/api/about/")
+    // Fetch live from database with no-store cache so all visitors see updates immediately
+    fetch("/api/about", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success && json?.data) {
-          setData(json.data);
+          const merged = mergeData(json.data);
+          setData(merged);
+          setMediaError(false);
           try {
-            localStorage.setItem("dn_about_data", JSON.stringify(json.data));
+            localStorage.setItem("dn_about_data", JSON.stringify(merged));
           } catch {}
         }
       })
@@ -65,8 +98,16 @@ export function AboutView() {
     return () => window.removeEventListener("storage", loadData);
   }, []);
 
-  const isVideo = data.mediaType === "video" || isVideoUrl(data.mediaUrl);
-  const embedUrl = getEmbedUrl(data.mediaUrl);
+  // Determine media presentation
+  const rawUrl = data.mediaUrl?.trim();
+  const activeMediaUrl = mediaError || !rawUrl ? initialAboutData.mediaUrl : rawUrl;
+  const isVideo =
+    !mediaError &&
+    Boolean(rawUrl) &&
+    (data.mediaType === "video" || isVideoUrl(rawUrl)) &&
+    !isImageUrl(rawUrl);
+  const embedUrl = isVideo ? getEmbedUrl(activeMediaUrl) : null;
+
 
   return (
     <div className="py-20 px-6 max-w-7xl mx-auto space-y-24 bg-white">
@@ -131,20 +172,23 @@ export function AboutView() {
               />
             ) : (
               <video
-                key={data.mediaUrl}
-                src={data.mediaUrl}
+                key={activeMediaUrl}
+                src={activeMediaUrl}
                 autoPlay
                 loop
                 muted
                 playsInline
                 controls
+                onError={() => setMediaError(true)}
                 className="w-full h-full object-cover"
               />
             )
           ) : (
             <img
-              src={data.mediaUrl}
+              key={activeMediaUrl}
+              src={activeMediaUrl}
               alt="Design Nayan Studio"
+              onError={() => setMediaError(true)}
               className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
             />
           )}
