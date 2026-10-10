@@ -547,7 +547,6 @@ export default function AdminDashboardPage() {
             (r: any) =>
               r &&
               typeof r.id === "string" &&
-              !r.id.startsWith("inc_") &&
               r.clientName !== "Barpeta Commercial Complex" &&
               r.clientName !== "Dr. B. Sarma"
           );
@@ -576,7 +575,6 @@ export default function AdminDashboardPage() {
             (l: any) =>
               l &&
               typeof l.id === "string" &&
-              !l.id.startsWith("log_") &&
               !l.description?.includes("Barpeta Commercial Complex")
           );
           setIncomeAuditLogs(cleanLogs);
@@ -789,7 +787,7 @@ export default function AdminDashboardPage() {
       .catch((err) => console.error("Error loading finances from DB:", err));
 
     // Live Database Sync: About Data from PostgreSQL
-    fetch("/api/about/")
+    fetch("/api/about/", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data && data.success && data.data) {
@@ -800,6 +798,19 @@ export default function AdminDashboardPage() {
         }
       })
       .catch((err) => console.error("Error loading about data from DB:", err));
+
+    // Live Database Sync: Portfolio Projects from PostgreSQL
+    fetch("/api/projects/", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
+          setProjects(data.data);
+          try {
+            localStorage.setItem("dn_projects", JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.error("Error loading projects from DB:", err));
   }, []);
 
   // Native Web Audio API Luxury Chime (Zero audio files or external CDNs needed)
@@ -904,7 +915,7 @@ export default function AdminDashboardPage() {
     };
   }, [isAuthenticated, sessionTimeout]);
 
-    // Save About page changes to LocalStorage
+    // Save About page changes to LocalStorage and PostgreSQL database
   const updateAboutDataWithStorage = (data: AboutPageData) => {
     setAboutData(data);
     try {
@@ -912,7 +923,11 @@ export default function AdminDashboardPage() {
     } catch {}
     fetch("/api/about/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
       body: JSON.stringify(data),
     }).catch((err) => console.error("Error saving about data to DB:", err));
   };
@@ -925,12 +940,21 @@ export default function AdminDashboardPage() {
     } catch {}
   };
 
-  // Save Projects changes to LocalStorage
+  // Save Projects changes to LocalStorage and PostgreSQL database
   const updateProjectsWithStorage = (newList: ProjectItem[]) => {
     setProjects(newList);
     try {
       localStorage.setItem("dn_projects", JSON.stringify(newList));
     } catch {}
+    fetch("/api/projects/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
+      body: JSON.stringify(newList),
+    }).catch((err) => console.error("Error saving projects to DB:", err));
   };
 
   // Save Stays & Rentals changes to LocalStorage
@@ -1526,6 +1550,7 @@ export default function AdminDashboardPage() {
       fetch("/api/finances/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ record: updatedRecord, log: newLog }),
       }).catch((err) => console.error("Error saving finance record to DB:", err));
       showToast("Transaction updated");
@@ -1565,6 +1590,7 @@ export default function AdminDashboardPage() {
       fetch("/api/finances/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ record: newRecord, log: newLog }),
       }).catch((err) => console.error("Error creating finance record in DB:", err));
       showToast("New transaction recorded");
@@ -1591,6 +1617,7 @@ export default function AdminDashboardPage() {
       fetch("/api/finances/", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id: record.id, log: newLog }),
       }).catch((err) => console.error("Error deleting finance record in DB:", err));
       showToast("Transaction deleted");

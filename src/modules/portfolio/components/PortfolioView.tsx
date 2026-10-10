@@ -185,15 +185,35 @@ export function PortfolioView() {
   const [projectsList, setProjectsList] = useState<ProjectItem[]>(projectsData);
 
   useEffect(() => {
-    const saved = localStorage.getItem("dn_projects");
-    if (saved) {
+    const loadData = () => {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setProjectsList(parsed);
+        const saved = localStorage.getItem("dn_projects");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProjectsList(parsed);
+          }
         }
       } catch {}
-    }
+    };
+
+    loadData();
+
+    // Fetch live from database so all visitors and reloads receive the owner's updates
+    fetch("/api/projects/")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
+          setProjectsList(json.data);
+          try {
+            localStorage.setItem("dn_projects", JSON.stringify(json.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch live portfolio projects:", err));
+
+    window.addEventListener("storage", loadData);
+    return () => window.removeEventListener("storage", loadData);
   }, []);
 
   // Dynamically derive stats directly from uploaded portfolio projects

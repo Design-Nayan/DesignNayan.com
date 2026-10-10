@@ -73,6 +73,27 @@ export default function AllTransactionsPage() {
       setIsAuthenticated(true);
     }
 
+    // Live Database Sync: Finance Records and Immutable Audit Logs from PostgreSQL
+    fetch("/api/finances/", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success) {
+          if (Array.isArray(data.records)) {
+            setIncomeRecords(data.records);
+            try {
+              localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(data.records));
+            } catch {}
+          }
+          if (Array.isArray(data.logs)) {
+            setAuditLogs(data.logs);
+            try {
+              localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(data.logs));
+            } catch {}
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading finances from DB:", err));
+
     try {
       const storedIncome = localStorage.getItem(DN_ADMIN_INCOME_KEY);
       if (storedIncome) {
@@ -83,7 +104,6 @@ export default function AllTransactionsPage() {
             (r: any) =>
               r &&
               typeof r.id === "string" &&
-              !r.id.startsWith("inc_") &&
               r.clientName !== "Barpeta Commercial Complex" &&
               r.clientName !== "Dr. B. Sarma"
           );
@@ -107,7 +127,6 @@ export default function AllTransactionsPage() {
             (l: any) =>
               l &&
               typeof l.id === "string" &&
-              !l.id.startsWith("log_") &&
               !l.description?.includes("Barpeta Commercial Complex")
           );
           setAuditLogs(cleanLogs);
@@ -269,6 +288,27 @@ export default function AllTransactionsPage() {
       setAuditLogs(updatedLogs);
       localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
 
+      const updatedRecord = {
+        ...editingIncome,
+        amount: receivedAmount,
+        totalAmount: totalContractValue,
+        pendingAmount,
+        paymentStatus,
+        dueDate,
+        category,
+        clientName,
+        clientPhone,
+        projectDetails,
+        date,
+        paymentMethod,
+      };
+      fetch("/api/finances/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ record: updatedRecord, log: newLog }),
+      }).catch((err) => console.error("Error updating transaction in DB:", err));
+
       showToast(`Updated transaction for ${clientName}`);
     } else {
       const newRec: IncomeRecord = {
@@ -301,6 +341,13 @@ export default function AllTransactionsPage() {
       setAuditLogs(updatedLogs);
       localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
 
+      fetch("/api/finances/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ record: newRec, log: newLog }),
+      }).catch((err) => console.error("Error creating transaction in DB:", err));
+
       showToast(`Logged transaction for ${clientName}`);
     }
 
@@ -331,6 +378,7 @@ export default function AllTransactionsPage() {
       fetch("/api/finances/", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id: record.id, log: newLog }),
       }).catch((err) => console.error("Error deleting transaction in DB:", err));
 

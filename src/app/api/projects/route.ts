@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { initialAboutData } from "@/modules/about/data/about.data";
+import { projectsData } from "@/modules/projects/data/projects.data";
 import { getCurrentAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const record = await db.siteContent.findUnique({
-      where: { key: "about_page" },
+      where: { key: "portfolio_projects" },
     });
 
-    if (record?.data) {
+    if (record?.data && Array.isArray(record.data) && record.data.length > 0) {
       return NextResponse.json({
         success: true,
         source: "database",
@@ -22,27 +22,27 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       source: "fallback",
-      data: initialAboutData,
+      data: projectsData,
     });
   } catch (error) {
-    console.error("Error reading about page from DB:", error);
+    console.error("Error reading portfolio projects from DB:", error);
     return NextResponse.json({
       success: true,
       source: "fallback",
-      data: initialAboutData,
+      data: projectsData,
     });
   }
 }
 
 export async function POST(req: NextRequest) {
-  return handleAboutUpdate(req);
+  return handleProjectsUpdate(req);
 }
 
 export async function PUT(req: NextRequest) {
-  return handleAboutUpdate(req);
+  return handleProjectsUpdate(req);
 }
 
-async function handleAboutUpdate(req: NextRequest) {
+async function handleProjectsUpdate(req: NextRequest) {
   try {
     const admin = await getCurrentAdmin();
     const authHeader = req.headers.get("x-admin-auth");
@@ -54,18 +54,18 @@ async function handleAboutUpdate(req: NextRequest) {
 
     const payload = await req.json();
 
-    if (!payload || typeof payload !== "object") {
+    if (!payload || !Array.isArray(payload)) {
       return NextResponse.json(
-        { error: "Invalid payload provided" },
+        { error: "Invalid payload provided. Array of projects expected." },
         { status: 400 }
       );
     }
 
     const updated = await db.siteContent.upsert({
-      where: { key: "about_page" },
+      where: { key: "portfolio_projects" },
       update: { data: payload },
       create: {
-        key: "about_page",
+        key: "portfolio_projects",
         data: payload,
       },
     });
@@ -76,7 +76,7 @@ async function handleAboutUpdate(req: NextRequest) {
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (error) {
-    console.error("Error updating about page in DB:", error);
+    console.error("Error updating portfolio projects in DB:", error);
     return NextResponse.json(
       { error: "Database update failed" },
       { status: 500 }

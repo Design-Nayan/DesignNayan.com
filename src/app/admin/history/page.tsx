@@ -76,7 +76,6 @@ export default function AllHistoryPage() {
             (l: any) =>
               l &&
               typeof l.id === "string" &&
-              !l.id.startsWith("log_") &&
               !l.description?.includes("Barpeta Commercial Complex")
           );
           setAuditLogs(cleanLogs);
