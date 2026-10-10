@@ -7,25 +7,66 @@ import { AboutPageData } from "../types/about.types";
 
 const isVideoUrl = (url?: string): boolean => {
   if (!url) return false;
-  return url.startsWith("data:video/") || /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(url);
+  return (
+    url.startsWith("data:video/") ||
+    url.startsWith("/uploads/") ||
+    /\.(mp4|webm|ogg|mov|m4v)($|\?)/i.test(url) ||
+    url.includes("youtube.com") ||
+    url.includes("youtu.be") ||
+    url.includes("vimeo.com")
+  );
+};
+
+const getEmbedUrl = (url?: string): string | null => {
+  if (!url) return null;
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch) {
+    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}`;
+  }
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1&loop=1`;
+  }
+  return null;
 };
 
 export function AboutView() {
   const [data, setData] = useState<AboutPageData>(initialAboutData);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dn_about_data");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === "object") {
-          setData(parsed);
+    const loadData = () => {
+      try {
+        const saved = localStorage.getItem("dn_about_data");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            setData(parsed);
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    };
+
+    loadData();
+
+    // Fetch live from database so all visitors see the owner's updates
+    fetch("/api/about/")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && json?.data) {
+          setData(json.data);
+          try {
+            localStorage.setItem("dn_about_data", JSON.stringify(json.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch live about data:", err));
+
+    window.addEventListener("storage", loadData);
+    return () => window.removeEventListener("storage", loadData);
   }, []);
 
   const isVideo = data.mediaType === "video" || isVideoUrl(data.mediaUrl);
+  const embedUrl = getEmbedUrl(data.mediaUrl);
 
   return (
     <div className="py-20 px-6 max-w-7xl mx-auto space-y-24 bg-white">
@@ -80,15 +121,26 @@ export function AboutView() {
         {/* Media Container: Photo & Video Compatible */}
         <div className="rounded-3xl overflow-hidden shadow-2xl border border-neutral-200 aspect-[4/3] bg-neutral-950 relative group">
           {isVideo ? (
-            <video
-              src={data.mediaUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              controls
-              className="w-full h-full object-cover"
-            />
+            embedUrl ? (
+              <iframe
+                src={embedUrl}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Design Nayan Video Presentation"
+              />
+            ) : (
+              <video
+                key={data.mediaUrl}
+                src={data.mediaUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls
+                className="w-full h-full object-cover"
+              />
+            )
           ) : (
             <img
               src={data.mediaUrl}

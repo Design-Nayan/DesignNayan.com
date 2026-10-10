@@ -19,6 +19,7 @@ import {
   X,
   ExternalLink,
   Eye,
+  EyeOff,
   UploadCloud,
   ImageIcon,
   Shield,
@@ -63,7 +64,6 @@ import {
   Volume2,
   VolumeX,
   Smartphone,
-  RotateCcw,
   Sliders,
 } from "lucide-react";
 
@@ -309,6 +309,7 @@ export default function AdminDashboardPage() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState("");
+  const [showLoginPasscode, setShowLoginPasscode] = useState(false);
   const [authError, setAuthError] = useState("");
 
   // Navigation State
@@ -357,9 +358,12 @@ export default function AdminDashboardPage() {
   // Settings & Security States
   const [themeMode, setThemeMode] = useState<"light" | "dark">("light");
   const [adminEmail, setAdminEmail] = useState<string>("admin@designnayan.com");
-  const [adminPasscode, setAdminPasscode] = useState<string>("nayan2026");
+  const [adminPasscode, setAdminPasscode] = useState<string>("");
   const [twoFactorEnabled, setTwoFactorEnabled] = useState<boolean>(false);
-  const [twoFactorSecret, setTwoFactorSecret] = useState<string>("DNAYAN-2026-AUTH-X9K2");
+  const [twoFactorSecret, setTwoFactorSecret] = useState<string>("");
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState<string>("");
+  const [twoFactorVerifyInput, setTwoFactorVerifyInput] = useState<string>("");
+  const [isSettingUp2FA, setIsSettingUp2FA] = useState<boolean>(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([
     "8921-4301",
     "6712-9934",
@@ -393,7 +397,6 @@ export default function AdminDashboardPage() {
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [restoreJsonFile, setRestoreJsonFile] = useState<File | null>(null);
   const [restorePreviewCount, setRestorePreviewCount] = useState<number | null>(null);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedCodes, setCopiedCodes] = useState(false);
 
@@ -538,36 +541,57 @@ export default function AdminDashboardPage() {
     if (savedIncome) {
       try {
         const parsed = JSON.parse(savedIncome);
-        if (Array.isArray(parsed) && parsed.length >= initialIncomeRecords.length) {
-          setIncomeRecords(parsed);
+        if (Array.isArray(parsed)) {
+          // Filter out legacy dummy records so finance stays clean
+          const cleanRecords = parsed.filter(
+            (r: any) =>
+              r &&
+              typeof r.id === "string" &&
+              !r.id.startsWith("inc_") &&
+              r.clientName !== "Barpeta Commercial Complex" &&
+              r.clientName !== "Dr. B. Sarma"
+          );
+          setIncomeRecords(cleanRecords);
+          localStorage.setItem("dn_admin_income", JSON.stringify(cleanRecords));
         } else {
-          setIncomeRecords(initialIncomeRecords);
-          localStorage.setItem("dn_admin_income", JSON.stringify(initialIncomeRecords));
+          setIncomeRecords([]);
+          localStorage.setItem("dn_admin_income", JSON.stringify([]));
         }
       } catch {
-        setIncomeRecords(initialIncomeRecords);
+        setIncomeRecords([]);
+        localStorage.setItem("dn_admin_income", JSON.stringify([]));
       }
     } else {
-      setIncomeRecords(initialIncomeRecords);
-      localStorage.setItem("dn_admin_income", JSON.stringify(initialIncomeRecords));
+      setIncomeRecords([]);
+      localStorage.setItem("dn_admin_income", JSON.stringify([]));
     }
 
     const savedLogs = localStorage.getItem("dn_admin_income_logs");
     if (savedLogs) {
       try {
         const parsedLogs = JSON.parse(savedLogs);
-        if (Array.isArray(parsedLogs) && parsedLogs.length >= initialAuditLogs.length) {
-          setIncomeAuditLogs(parsedLogs);
+        if (Array.isArray(parsedLogs)) {
+          // Filter out legacy dummy logs so history stays clean
+          const cleanLogs = parsedLogs.filter(
+            (l: any) =>
+              l &&
+              typeof l.id === "string" &&
+              !l.id.startsWith("log_") &&
+              !l.description?.includes("Barpeta Commercial Complex")
+          );
+          setIncomeAuditLogs(cleanLogs);
+          localStorage.setItem("dn_admin_income_logs", JSON.stringify(cleanLogs));
         } else {
-          setIncomeAuditLogs(initialAuditLogs);
-          localStorage.setItem("dn_admin_income_logs", JSON.stringify(initialAuditLogs));
+          setIncomeAuditLogs([]);
+          localStorage.setItem("dn_admin_income_logs", JSON.stringify([]));
         }
       } catch {
-        setIncomeAuditLogs(initialAuditLogs);
+        setIncomeAuditLogs([]);
+        localStorage.setItem("dn_admin_income_logs", JSON.stringify([]));
       }
     } else {
-      setIncomeAuditLogs(initialAuditLogs);
-      localStorage.setItem("dn_admin_income_logs", JSON.stringify(initialAuditLogs));
+      setIncomeAuditLogs([]);
+      localStorage.setItem("dn_admin_income_logs", JSON.stringify([]));
     }
 
     const savedStudio = localStorage.getItem("dn_studio_services");
@@ -653,6 +677,13 @@ export default function AdminDashboardPage() {
     const savedTheme = localStorage.getItem("dn_admin_theme") as "light" | "dark" | null;
     if (savedTheme === "light" || savedTheme === "dark") {
       setThemeMode(savedTheme);
+      if (typeof document !== "undefined") {
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
     }
 
     const savedEmail = localStorage.getItem("dn_admin_email");
@@ -698,14 +729,182 @@ export default function AdminDashboardPage() {
     if (savedPush !== null) {
       setPushNotificationEnabled(savedPush === "true");
     }
+
+    // Live Database Sync: Inquiries from PostgreSQL
+    fetch("/api/inquiries/")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.inquiries) && data.inquiries.length > 0) {
+          const dbInquiries = data.inquiries.map((dbInq: any) => ({
+            id: dbInq.id,
+            name: dbInq.name,
+            phone: dbInq.phone || "Not provided",
+            email: dbInq.email,
+            service: dbInq.service || "General Inquiry",
+            budget: dbInq.budget || "Not specified",
+            message: dbInq.message || "",
+            location: dbInq.location || "India",
+            status: dbInq.status || "NEW",
+            date: new Date(dbInq.createdAt).toLocaleDateString("en-IN", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }));
+          setInquiries(dbInquiries);
+        }
+      })
+      .catch((err) => console.error("Error loading inquiries from DB:", err));
+
+    // Live Database Sync: Finance Records and Immutable Audit Logs from PostgreSQL
+    fetch("/api/finances/")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success) {
+          if (Array.isArray(data.records)) {
+            setIncomeRecords(data.records);
+            try {
+              localStorage.setItem("dn_admin_income", JSON.stringify(data.records));
+            } catch {}
+          }
+          if (Array.isArray(data.logs)) {
+            setIncomeAuditLogs(data.logs);
+            try {
+              localStorage.setItem("dn_admin_income_logs", JSON.stringify(data.logs));
+            } catch {}
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading finances from DB:", err));
+
+    // Live Database Sync: About Data from PostgreSQL
+    fetch("/api/about/")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && data.data) {
+          setAboutData(data.data);
+          try {
+            localStorage.setItem("dn_about_data", JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.error("Error loading about data from DB:", err));
   }, []);
 
-  // Save About page changes to LocalStorage
+  // Native Web Audio API Luxury Chime (Zero audio files or external CDNs needed)
+  const playInquiryChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      // Tone 1 (E5 - 659.25Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Tone 2 (B5 - 987.77Hz - Harmonic lift)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(987.77, now + 0.12);
+      gain2.gain.setValueAtTime(0.22, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.6);
+    } catch {}
+  };
+
+  // Web Notification API Handler for Desktop Push Alerts
+  const handleTogglePushNotifications = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      showToast("Desktop push alerts are not supported in this browser");
+      return;
+    }
+
+    if (!pushNotificationEnabled) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          setPushNotificationEnabled(true);
+          try {
+            localStorage.setItem("dn_admin_push_alerts", "true");
+          } catch {}
+          new Notification("Design Nayan Admin", {
+            body: "Desktop push alerts activated! You will receive instant notifications for new client inquiries.",
+            icon: "/images/logo.png",
+          });
+          showToast("Desktop push alerts enabled");
+        } else {
+          showToast("Notification permission was denied in browser");
+        }
+      } catch {
+        showToast("Error requesting notification permissions");
+      }
+    } else {
+      setPushNotificationEnabled(false);
+      try {
+        localStorage.setItem("dn_admin_push_alerts", "false");
+      } catch {}
+      showToast("Desktop push alerts disabled");
+    }
+  };
+
+    // Auto-Logout Inactivity Idle Timer
+  useEffect(() => {
+    if (!isAuthenticated || sessionTimeout === "never") return;
+
+    let timeoutMinutes = 120; // default 2 hours
+    if (sessionTimeout === "15m") timeoutMinutes = 15;
+    else if (sessionTimeout === "30m") timeoutMinutes = 30;
+    else if (sessionTimeout === "2h") timeoutMinutes = 120;
+    else if (sessionTimeout === "12h") timeoutMinutes = 720;
+
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    let lastActivity = Date.now();
+
+    const resetTimer = () => {
+      lastActivity = Date.now();
+    };
+
+    const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+
+    const interval = setInterval(() => {
+      if (Date.now() - lastActivity >= timeoutMs) {
+        handleLogout();
+        showToast("Session locked due to inactivity");
+      }
+    }, 10000);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, sessionTimeout]);
+
+    // Save About page changes to LocalStorage
   const updateAboutDataWithStorage = (data: AboutPageData) => {
     setAboutData(data);
     try {
       localStorage.setItem("dn_about_data", JSON.stringify(data));
     } catch {}
+    fetch("/api/about/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).catch((err) => console.error("Error saving about data to DB:", err));
   };
 
   // Save Contact details changes to LocalStorage
@@ -767,15 +966,20 @@ export default function AdminDashboardPage() {
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const effectivePasscode = adminPasscode || "nayan2026";
-    if (
-      passcode === effectivePasscode ||
-      passcode === "nayan2026" ||
-      passcode === "admin123" ||
-      passcode === "admin"
-    ) {
+    setAuthError("");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: adminEmail, password: passcode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setAuthError(data.error || "Incorrect credentials. Please verify and try again.");
+        return;
+      }
       setAuthError("");
       if (twoFactorEnabled) {
         setTwoFactorLoginStep(true);
@@ -784,12 +988,12 @@ export default function AdminDashboardPage() {
         localStorage.setItem("dn_admin_auth", "true");
         showToast("Signed in successfully");
       }
-    } else {
-      setAuthError("Incorrect passcode. Please check and try again.");
+    } catch {
+      setAuthError("Failed to authenticate. Please check server connection.");
     }
   };
 
-  const handleVerify2FA = (e: React.FormEvent) => {
+  const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = loginOtpCode.trim();
     if (!cleanCode) {
@@ -797,22 +1001,29 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const isBackupMatch = backupCodes.some(
-      (c) =>
-        c.replace("-", "").toLowerCase() === cleanCode.replace("-", "").toLowerCase() ||
-        c.toLowerCase() === cleanCode.toLowerCase()
-    );
-    const isOtpMatch = /^\d{6}$/.test(cleanCode) || cleanCode === "123456";
-
-    if (isBackupMatch || isOtpMatch) {
-      setIsAuthenticated(true);
-      localStorage.setItem("dn_admin_auth", "true");
-      setTwoFactorLoginStep(false);
-      setLoginOtpCode("");
-      setAuthError("");
-      showToast("Two-Factor Authentication verified. Welcome back!");
-    } else {
-      setAuthError("Invalid verification code. Please check your authenticator app or enter a backup code.");
+    try {
+      const res = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: cleanCode,
+          secret: twoFactorSecret,
+          backupCodes: backupCodes,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsAuthenticated(true);
+        localStorage.setItem("dn_admin_auth", "true");
+        setTwoFactorLoginStep(false);
+        setLoginOtpCode("");
+        setAuthError("");
+        showToast("Two-Factor Authentication verified. Welcome back!");
+      } else {
+        setAuthError(data.error || "Invalid verification code. Please check your authenticator app.");
+      }
+    } catch (err) {
+      setAuthError("Verification service error. Please try again.");
     }
   };
 
@@ -829,32 +1040,52 @@ export default function AdminDashboardPage() {
     try {
       localStorage.setItem("dn_admin_theme", mode);
     } catch {}
+    if (typeof document !== "undefined") {
+      if (mode === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
     showToast(`Switched to ${mode === "dark" ? "Midnight Dark" : "Clean Light"} mode`);
   };
 
-  const handleUpdateEmail = (e: React.FormEvent) => {
+  const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput || !emailInput.includes("@")) {
       showToast("Please provide a valid email address.");
       return;
     }
-    setAdminEmail(emailInput);
+
     try {
-      localStorage.setItem("dn_admin_email", emailInput);
-    } catch {}
-    showToast("Admin account email updated successfully");
+      const res = await fetch("/api/auth/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_EMAIL",
+          currentEmail: adminEmail,
+          newEmail: emailInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminEmail(emailInput.trim());
+        try {
+          localStorage.setItem("dn_admin_email", emailInput.trim());
+        } catch {}
+        showToast("Admin email updated in database successfully!");
+      } else {
+        showToast(data.error || "Failed to update email");
+      }
+    } catch {
+      showToast("Failed to update email. Please check server.");
+    }
   };
 
-  const handleUpdatePasscode = (e: React.FormEvent) => {
+  const handleUpdatePasscode = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasscodeError("");
     setPasscodeSuccess("");
-
-    const currentActual = adminPasscode || "nayan2026";
-    if (currentPasscodeInput !== currentActual && currentPasscodeInput !== "nayan2026") {
-      setPasscodeError("Current passcode is incorrect.");
-      return;
-    }
 
     if (newPasscodeInput.length < 6) {
       setPasscodeError("New passcode must contain at least 6 characters.");
@@ -866,23 +1097,102 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    setAdminPasscode(newPasscodeInput);
     try {
-      localStorage.setItem("dn_admin_passcode", newPasscodeInput);
-    } catch {}
-    setCurrentPasscodeInput("");
-    setNewPasscodeInput("");
-    setConfirmPasscodeInput("");
-    setPasscodeSuccess("Passcode updated successfully! Remember this for your next login.");
-    showToast("Admin passcode changed successfully");
+      const res = await fetch("/api/auth/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_PASSWORD",
+          currentEmail: adminEmail,
+          currentPassword: currentPasscodeInput,
+          newPassword: newPasscodeInput,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminPasscode(newPasscodeInput);
+        try {
+          localStorage.setItem("dn_admin_passcode", newPasscodeInput);
+        } catch {}
+        setCurrentPasscodeInput("");
+        setNewPasscodeInput("");
+        setConfirmPasscodeInput("");
+        setPasscodeSuccess("Password updated and hashed in database successfully!");
+        setTimeout(() => setPasscodeSuccess(""), 4000);
+        showToast("Admin password updated successfully");
+      } else {
+        setPasscodeError(data.error || "Failed to update passcode");
+      }
+    } catch {
+      setPasscodeError("Server communication failed. Please try again.");
+    }
   };
 
-  const handleToggle2FA = (enable: boolean) => {
-    setTwoFactorEnabled(enable);
+  const handleToggle2FA = async (enable: boolean) => {
+    if (!enable) {
+      setTwoFactorEnabled(false);
+      setIsSettingUp2FA(false);
+      try {
+        localStorage.setItem("dn_admin_2fa_enabled", "false");
+      } catch {}
+      showToast("Two-Factor Authentication has been disabled");
+      return;
+    }
+
+    setIsSettingUp2FA(true);
     try {
-      localStorage.setItem("dn_admin_2fa_enabled", enable ? "true" : "false");
-    } catch {}
-    showToast(enable ? "Two-Factor Authentication is now ENABLED" : "Two-Factor Authentication has been disabled");
+      const res = await fetch("/api/auth/2fa/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: adminEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFactorSecret(data.secret);
+        setTwoFactorQrCode(data.qrCodeDataUrl);
+        try {
+          localStorage.setItem("dn_admin_2fa_secret", data.secret);
+          localStorage.setItem("dn_admin_2fa_qr", data.qrCodeDataUrl);
+        } catch {}
+      } else {
+        showToast("Could not generate 2FA QR code: " + (data.error || "Unknown error"));
+      }
+    } catch {
+      showToast("Error communicating with 2FA service");
+    }
+  };
+
+  const handleConfirm2FAActivation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFactorVerifyInput.trim()) {
+      showToast("Please enter the 6-digit code from your authenticator app");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: twoFactorVerifyInput.trim(),
+          secret: twoFactorSecret,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFactorEnabled(true);
+        setIsSettingUp2FA(false);
+        setTwoFactorVerifyInput("");
+        try {
+          localStorage.setItem("dn_admin_2fa_enabled", "true");
+        } catch {}
+        showToast("Two-Factor Authentication is now ACTIVE!");
+      } else {
+        showToast(data.error || "Invalid 6-digit code. Please try again.");
+      }
+    } catch {
+      showToast("Error verifying code with server");
+    }
   };
 
   const handleRegenerateBackupCodes = () => {
@@ -993,29 +1303,6 @@ export default function AdminDashboardPage() {
       }
     };
     reader.readAsText(restoreJsonFile);
-  };
-
-  const handleResetDemoData = () => {
-    localStorage.removeItem("dn_about_data");
-    localStorage.removeItem("dn_contact_details");
-    localStorage.removeItem("dn_creators");
-    localStorage.removeItem("dn_stay_rentals");
-    localStorage.removeItem("dn_stay_hotels");
-    localStorage.removeItem("dn_admin_income");
-    localStorage.removeItem("dn_admin_income_logs");
-    localStorage.removeItem("dn_studio_services");
-    localStorage.removeItem("dn_build_services");
-    setAboutData(initialAboutData);
-    setContactData(initialContactData);
-    setCreators(initialCreators);
-    setRentals(initialRentals);
-    setHotels(initialHotels);
-    setIncomeRecords(initialIncomeRecords);
-    setIncomeAuditLogs(initialAuditLogs);
-    setStudioServices(initialStudioServices);
-    setBuildServices(initialBuildServices);
-    setResetConfirmOpen(false);
-    showToast("System reset to sample demo data");
   };
 
   // Format Helper for Currency
@@ -1218,6 +1505,11 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage(updatedList, [newLog, ...incomeAuditLogs]);
+      fetch("/api/finances/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ record: updatedRecord, log: newLog }),
+      }).catch((err) => console.error("Error saving finance record to DB:", err));
       showToast("Transaction updated");
 
       if (viewingIncomeDetail?.id === editingIncome.id) {
@@ -1252,6 +1544,11 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage([newRecord, ...incomeRecords], [newLog, ...incomeAuditLogs]);
+      fetch("/api/finances/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ record: newRecord, log: newLog }),
+      }).catch((err) => console.error("Error creating finance record in DB:", err));
       showToast("New transaction recorded");
     }
 
@@ -1273,6 +1570,11 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage(updatedList, [newLog, ...incomeAuditLogs]);
+      fetch("/api/finances/", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: record.id, log: newLog }),
+      }).catch((err) => console.error("Error deleting finance record in DB:", err));
       showToast("Transaction deleted");
       if (viewingIncomeDetail?.id === record.id) {
         setViewingIncomeDetail(null);
@@ -2165,6 +2467,58 @@ export default function AdminDashboardPage() {
     const isDark = themeMode === "dark";
     return (
       <div className={`min-h-screen ${isDark ? "dn-admin-dark bg-stone-950 text-stone-100" : "bg-[#faf9f6] text-stone-900"} flex flex-col items-center justify-center p-6 antialiased font-sans relative`}>
+        {/* Scoped Dark Theme CSS for Login Screen */}
+        {isDark && (
+          <style>{`
+            .dn-admin-dark {
+              background-color: #0c0a09 !important;
+              color: #fafaf9 !important;
+            }
+            .dn-admin-dark .bg-white {
+              background-color: #1c1917 !important;
+              color: #fafaf9 !important;
+            }
+            .dn-admin-dark .bg-\\[\\#faf9f6\\] {
+              background-color: #0c0a09 !important;
+            }
+            .dn-admin-dark .bg-stone-50,
+            .dn-admin-dark .bg-stone-50\\/80,
+            .dn-admin-dark .bg-stone-100 {
+              background-color: #262220 !important;
+              color: #f5f5f4 !important;
+            }
+            .dn-admin-dark .border-stone-200,
+            .dn-admin-dark .border-stone-200\\/60,
+            .dn-admin-dark .border-stone-200\\/80 {
+              border-color: #292524 !important;
+            }
+            .dn-admin-dark .text-stone-900,
+            .dn-admin-dark .text-stone-800 {
+              color: #fafaf9 !important;
+            }
+            .dn-admin-dark .text-stone-700 {
+              color: #e7e5e4 !important;
+            }
+            .dn-admin-dark .text-stone-500 {
+              color: #a8a29e !important;
+            }
+            .dn-admin-dark input {
+              background-color: #262220 !important;
+              color: #fafaf9 !important;
+              border-color: #44403c !important;
+            }
+            .dn-admin-dark input::placeholder {
+              color: #78716c !important;
+            }
+          `}</style>
+        )}
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-[200] bg-stone-900 text-white px-4 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 text-xs font-medium animate-in fade-in slide-in-from-bottom-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
         {/* Quick Theme Switcher on Login Screen */}
         <div className="absolute top-5 right-5">
           <button
@@ -2219,19 +2573,27 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="relative">
                     <input
-                      type="password"
+                      type={showLoginPasscode ? "text" : "password"}
                       value={passcode}
                       onChange={(e) => setPasscode(e.target.value)}
-                      placeholder="Enter passcode (e.g. nayan2026)"
+                      placeholder="Enter your admin passcode"
                       required
                       autoFocus
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-2xl ${
+                      className={`w-full pl-10 pr-11 py-2.5 rounded-2xl ${
                         isDark
                           ? "bg-stone-800/80 border-stone-700 text-white placeholder:text-stone-500 focus:bg-stone-800 focus:border-stone-500"
                           : "bg-stone-50/80 border-stone-200/80 text-stone-900 placeholder:text-stone-400 focus:bg-white focus:border-stone-400"
                       } border text-sm focus:outline-none transition-all`}
                     />
-                    <Lock className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+                    <Lock className="w-4 h-4 text-stone-400 absolute left-3.5 top-3 pointer-events-none" />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPasscode(!showLoginPasscode)}
+                      aria-label={showLoginPasscode ? "Hide passcode" : "Show passcode"}
+                      className={`absolute right-3.5 top-3 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer`}
+                    >
+                      {showLoginPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -2441,7 +2803,13 @@ export default function AdminDashboardPage() {
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
             <div className="flex items-center gap-2.5">
-              <span className="text-base font-semibold tracking-tight">{siteConfig.banglaName}</span>
+              <Link href="/" target="_blank" className="inline-flex items-center select-none" title="Visit Design Nayan Website">
+                <img
+                  src={isDark ? "/images/logo-white.png" : "/images/logo.png"}
+                  alt="Design Nayan"
+                  className="h-7 sm:h-8 w-auto object-contain transition-transform hover:scale-[1.02]"
+                />
+              </Link>
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${isDark ? "bg-stone-800 text-stone-300 border-stone-700" : "bg-stone-100 text-stone-600 border-stone-200/60"} border uppercase`}>
                 Admin
               </span>
@@ -4907,378 +5275,320 @@ export default function AdminDashboardPage() {
         {/* TAB 7: SETTINGS & SECURITY                              */}
         {/* ------------------------------------------------------- */}
         {activeTab === "settings" && (
-          <div className="space-y-8 animate-in fade-in max-w-4xl pb-12">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200/60 dark:border-stone-800">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Dashboard Settings & Security</h1>
-                <p className="text-stone-500 dark:text-stone-400 text-xs font-normal mt-0.5">
-                  Configure appearance, admin credentials, two-factor authentication, and backup snapshots.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                  isDark ? "bg-stone-900 border-stone-800 text-amber-400" : "bg-stone-100 border-stone-200/80 text-stone-700"
-                }`}>
-                  {isDark ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
-                  <span>{isDark ? "Midnight Dark" : "Clean Light"}</span>
-                </span>
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                  twoFactorEnabled
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                    : "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"
-                }`}>
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{twoFactorEnabled ? "2FA Active" : "2FA Off"}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-2xs"
-                  title="Sign out of Admin Dashboard"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
+          <div className="space-y-8 animate-in fade-in max-w-3xl pb-16">
+            {/* Header: Clean, confident, no pills, no subtext */}
+            <div className={`pb-4 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"}`}>
+              <h1 className={`text-2xl sm:text-3xl font-semibold tracking-tight ${isDark ? "text-white" : "text-stone-900"}`}>
+                Settings & Security
+              </h1>
             </div>
 
-            {/* ========================================================= */}
-            {/* 1. APPEARANCE & THEME MODE                                */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-5`}>
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${isDark ? "bg-stone-800 text-amber-400" : "bg-stone-100 text-stone-800"}`}>
-                    <Palette className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold tracking-tight">Appearance & Theme Mode</h2>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">Switch between Light and Dark interface styles</p>
-                  </div>
-                </div>
-              </div>
+            {/* 1. APPEARANCE */}
+            <div className={`pt-2 pb-6 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"} flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+              <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                Appearance
+              </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Light Theme Card */}
-                <div
-                  onClick={() => handleToggleTheme("light")}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-4 ${
-                    !isDark
-                      ? "border-stone-900 bg-stone-50/90 shadow-xs"
-                      : "border-stone-800 hover:border-stone-700 bg-stone-900/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center border border-amber-500/20">
-                        <Sun className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Clean Light Mode</h3>
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">High daylight contrast & warm stones</p>
-                      </div>
-                    </div>
-                    {!isDark && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-stone-900 text-white text-[10px] font-semibold uppercase tracking-wider">
-                        Active
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Visual Preview Miniature */}
-                  <div className="p-3 rounded-xl bg-white border border-stone-200/80 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-stone-300" />
-                      <div className="h-2 w-20 rounded bg-stone-200" />
-                    </div>
-                    <div className="h-4 w-full rounded bg-stone-100 flex items-center px-2">
-                      <div className="h-1.5 w-12 rounded bg-stone-300" />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleTheme("light");
-                    }}
-                    className={`w-full py-2 rounded-xl text-xs font-medium transition-all ${
-                      !isDark
-                        ? "bg-stone-900 text-white"
-                        : "bg-stone-800 text-stone-300 hover:bg-stone-700"
-                    }`}
-                  >
-                    {!isDark ? "✓ Currently Active" : "Apply Clean Light"}
-                  </button>
-                </div>
-
-                {/* Dark Theme Card */}
-                <div
-                  onClick={() => handleToggleTheme("dark")}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between gap-4 ${
-                    isDark
-                      ? "border-emerald-500 bg-stone-950 shadow-xs"
-                      : "border-stone-200/80 hover:border-stone-300 bg-stone-50/40"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                        <Moon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Midnight Dark Mode</h3>
-                        <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">Deep obsidian surfaces & zero glare</p>
-                      </div>
-                    </div>
-                    {isDark && (
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-semibold uppercase tracking-wider">
-                        Active
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Visual Preview Miniature */}
-                  <div className="p-3 rounded-xl bg-stone-900 border border-stone-800 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-stone-700" />
-                      <div className="h-2 w-20 rounded bg-stone-700" />
-                    </div>
-                    <div className="h-4 w-full rounded bg-stone-800 flex items-center px-2">
-                      <div className="h-1.5 w-12 rounded bg-stone-600" />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleTheme("dark");
-                    }}
-                    className={`w-full py-2 rounded-xl text-xs font-medium transition-all ${
-                      isDark
-                        ? "bg-emerald-600 text-white"
-                        : "bg-stone-900 text-white hover:bg-stone-800"
-                    }`}
-                  >
-                    {isDark ? "✓ Currently Active" : "Apply Midnight Dark"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* ========================================================= */}
-            {/* 2. SECURITY & TWO-FACTOR AUTHENTICATION (2FA)              */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-6`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold tracking-tight">Two-Factor Authentication (2FA)</h2>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                      Protect your admin portal with an authenticator app (Google Authenticator, Authy, Apple Passwords)
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggle2FA(!twoFactorEnabled)}
-                  className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center gap-2 self-start sm:self-auto ${
-                    twoFactorEnabled
-                      ? "bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/30"
-                      : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{twoFactorEnabled ? "Disable 2FA Protection" : "Enable 2FA Protection"}</span>
-                </button>
-              </div>
-
-              {/* Status Banner */}
-              <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
-                twoFactorEnabled
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300"
-                  : "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300"
+              <div className={`inline-flex items-center p-1 rounded-xl border ${
+                isDark ? "bg-stone-900 border-stone-800" : "bg-stone-100/80 border-stone-200/70"
               }`}>
-                {twoFactorEnabled ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                )}
-                <div className="space-y-0.5">
-                  <h4 className="text-xs font-semibold">
-                    {twoFactorEnabled
-                      ? "2FA is Active & Protecting the Admin Dashboard"
-                      : "2FA is Currently Disabled"}
-                  </h4>
-                  <p className="text-[11px] opacity-90 leading-relaxed">
-                    {twoFactorEnabled
-                      ? "Upon entering your passcode, the login screen requires a 6-digit OTP code from your authenticator app or one of your emergency recovery codes."
-                      : "Anyone with your passcode can access management tools. We strongly recommend enabling Two-Factor Authentication for complete data security."}
-                  </p>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTheme("light")}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                    !isDark
+                      ? "bg-white text-stone-900 shadow-2xs font-semibold"
+                      : "text-stone-400 hover:text-stone-200"
+                  }`}
+                >
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTheme("dark")}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                    isDark
+                      ? "bg-stone-800 text-stone-100 shadow-2xs font-semibold"
+                      : "text-stone-500 hover:text-stone-900"
+                  }`}
+                >
+                  <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Dark</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. TWO-FACTOR AUTHENTICATION */}
+            <div className={`pt-2 pb-6 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"} space-y-4`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                    Two-Factor Authentication
+                  </h2>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${
+                    twoFactorEnabled
+                      ? isDark ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      : isDark ? "bg-stone-800 text-stone-400 border border-stone-700" : "bg-stone-100 text-stone-600 border border-stone-200"
+                  }`}>
+                    {twoFactorEnabled ? "Active" : isSettingUp2FA ? "Setup In Progress" : "Disabled"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isSettingUp2FA && !twoFactorEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSettingUp2FA(false)}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium cursor-pointer ${
+                        isDark ? "text-stone-400 hover:text-white" : "text-stone-600 hover:text-stone-900"
+                      }`}
+                    >
+                      Cancel Setup
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleToggle2FA(!twoFactorEnabled)}
+                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer self-start sm:self-auto ${
+                      twoFactorEnabled
+                        ? isDark
+                          ? "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30"
+                          : "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200"
+                        : isDark
+                          ? "bg-white text-stone-900 hover:bg-stone-200"
+                          : "bg-stone-900 text-white hover:bg-stone-800"
+                    }`}
+                  >
+                    {twoFactorEnabled ? "Disable 2FA" : isSettingUp2FA ? "Regenerate QR" : "Enable 2FA"}
+                  </button>
                 </div>
               </div>
 
-              {/* When 2FA is Enabled: Setup Box & Backup Codes */}
-              {twoFactorEnabled && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-                  {/* Left: Authenticator Pairing */}
-                  <div className={`p-5 rounded-2xl border ${isDark ? "bg-stone-950 border-stone-800" : "bg-stone-50/70 border-stone-200/80"} space-y-4`}>
-                    <div className="flex items-center gap-2">
-                      <QrCode className="w-4 h-4 text-emerald-500" />
-                      <h4 className="text-xs font-semibold">1. Pair Authenticator App</h4>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      {/* SVG Mock QR Code */}
-                      <div className="w-24 h-24 rounded-2xl bg-white p-2 border border-stone-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-                        <svg viewBox="0 0 100 100" className="w-full h-full">
-                          <rect width="100" height="100" fill="white" />
-                          {/* Corner Squares */}
-                          <rect x="10" y="10" width="28" height="28" fill="#1c1917" />
-                          <rect x="14" y="14" width="20" height="20" fill="white" />
-                          <rect x="18" y="18" width="12" height="12" fill="#1c1917" />
-
-                          <rect x="62" y="10" width="28" height="28" fill="#1c1917" />
-                          <rect x="66" y="14" width="20" height="20" fill="white" />
-                          <rect x="70" y="18" width="12" height="12" fill="#1c1917" />
-
-                          <rect x="10" y="62" width="28" height="28" fill="#1c1917" />
-                          <rect x="14" y="66" width="20" height="20" fill="white" />
-                          <rect x="18" y="70" width="12" height="12" fill="#1c1917" />
-
-                          {/* Data dots */}
-                          <rect x="44" y="12" width="10" height="6" fill="#1c1917" />
-                          <rect x="44" y="24" width="8" height="8" fill="#1c1917" />
-                          <rect x="44" y="40" width="12" height="12" fill="#1c1917" />
-                          <rect x="12" y="44" width="8" height="10" fill="#1c1917" />
-                          <rect x="26" y="44" width="10" height="8" fill="#1c1917" />
-                          <rect x="64" y="44" width="12" height="8" fill="#1c1917" />
-                          <rect x="80" y="44" width="8" height="12" fill="#1c1917" />
-                          <rect x="44" y="64" width="12" height="8" fill="#1c1917" />
-                          <rect x="64" y="64" width="8" height="14" fill="#1c1917" />
-                          <rect x="78" y="76" width="12" height="12" fill="#1c1917" />
-                          <rect x="44" y="80" width="8" height="8" fill="#1c1917" />
-                        </svg>
-                      </div>
-
-                      <div className="space-y-1.5 text-xs">
-                        <p className="text-stone-500 dark:text-stone-400 font-normal">
-                          Scan this QR with <strong>Google Authenticator</strong> or enter the manual secret key below:
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <code className="px-2.5 py-1 rounded-xl bg-stone-200/60 dark:bg-stone-800 text-stone-900 dark:text-white font-mono text-[11px] font-semibold">
-                            {twoFactorSecret}
-                          </code>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(twoFactorSecret);
-                              setCopiedKey(true);
-                              showToast("Secret key copied to clipboard");
-                              setTimeout(() => setCopiedKey(false), 2000);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
-                            title="Copy Secret Key"
-                          >
-                            {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+              {/* Setup Mode: Scan QR Code & Enter 6-digit confirmation */}
+              {isSettingUp2FA && !twoFactorEnabled && (
+                <div className={`p-5 rounded-2xl border ${
+                  isDark ? "bg-stone-900/60 border-stone-800" : "bg-stone-50/70 border-stone-200"
+                } space-y-5 mt-4`}>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <span className={`text-xs font-semibold ${isDark ? "text-stone-200" : "text-stone-800"}`}>
+                      Step 1: Scan QR Code with Google Authenticator, Microsoft Authenticator or Apple Keychain
+                    </span>
                   </div>
 
-                  {/* Right: Emergency Backup Codes */}
-                  <div className={`p-5 rounded-2xl border ${isDark ? "bg-stone-950 border-stone-800" : "bg-stone-50/70 border-stone-200/80"} space-y-4`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Key className="w-4 h-4 text-amber-500" />
-                        <h4 className="text-xs font-semibold">2. Emergency Recovery Codes</h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleRegenerateBackupCodes}
-                        className="text-[11px] text-stone-500 hover:text-stone-900 dark:hover:text-white flex items-center gap-1 font-medium cursor-pointer"
-                        title="Regenerate Codes"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Regenerate</span>
-                      </button>
-                    </div>
-
-                    <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                      Save these backup codes in a safe place. Each code can be used once if you lose your phone:
-                    </p>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {backupCodes.map((code, idx) => (
-                        <div
-                          key={idx}
-                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-center font-mono text-[11px] text-stone-800 dark:text-stone-200 font-medium"
-                        >
-                          {code}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* Left: Real QR Code */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      {twoFactorQrCode ? (
+                        <div className="w-36 h-36 rounded-2xl bg-white p-2 border border-stone-200 shadow-sm flex items-center justify-center shrink-0">
+                          <img
+                            src={twoFactorQrCode}
+                            alt="Scan 2FA QR Code"
+                            className="w-full h-full object-contain rounded-xl"
+                          />
                         </div>
-                      ))}
+                      ) : (
+                        <div className="w-36 h-36 rounded-2xl bg-stone-200 animate-pulse flex items-center justify-center text-xs text-stone-500">
+                          Generating QR...
+                        </div>
+                      )}
+
+                      <div className="space-y-2 text-center sm:text-left">
+                        <label className={`text-xs font-medium block ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                          Manual Entry Secret Key:
+                        </label>
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                          <code className={`px-2 py-1 rounded-lg font-mono text-xs font-semibold ${
+                            isDark ? "bg-stone-800 text-stone-200" : "bg-stone-200/70 text-stone-800"
+                          }`}>
+                            {twoFactorSecret || "Generating..."}
+                          </code>
+                          {twoFactorSecret && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(twoFactorSecret);
+                                setCopiedKey(true);
+                                showToast("Secret key copied");
+                                setTimeout(() => setCopiedKey(false), 2000);
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                isDark ? "hover:bg-stone-800 text-stone-400 hover:text-white" : "hover:bg-stone-200 text-stone-500 hover:text-stone-900"
+                              }`}
+                              title="Copy Secret Key"
+                            >
+                              {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-stone-400">
+                          Works with Google Authenticator, Microsoft Authenticator, 1Password & Apple Passwords.
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
+                    {/* Right: Confirmation input */}
+                    <form onSubmit={handleConfirm2FAActivation} className="space-y-3">
+                      <label className={`text-xs font-medium block ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                        Step 2: Enter the 6-digit code shown in your phone app
+                      </label>
+                      <input
+                        type="text"
+                        value={twoFactorVerifyInput}
+                        onChange={(e) => setTwoFactorVerifyInput(e.target.value)}
+                        placeholder="e.g. 582910"
+                        maxLength={6}
+                        required
+                        className={`w-full px-4 py-2.5 rounded-xl font-mono text-center tracking-widest text-base ${
+                          isDark
+                            ? "bg-stone-800/80 border-stone-700 text-white placeholder:text-stone-500"
+                            : "bg-white border-stone-300 text-stone-900 placeholder:text-stone-400"
+                        } border focus:outline-none`}
+                      />
                       <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(backupCodes.join("\n"));
-                          setCopiedCodes(true);
-                          showToast("All backup codes copied");
-                          setTimeout(() => setCopiedCodes(false), 2000);
-                        }}
-                        className="flex-1 py-1.5 px-3 rounded-xl bg-stone-200/80 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 text-xs font-medium text-stone-800 dark:text-stone-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        type="submit"
+                        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                       >
-                        {copiedCodes ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedCodes ? "Copied" : "Copy Codes"}</span>
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Verify & Activate 2FA</span>
                       </button>
+                    </form>
+                  </div>
+                </div>
+              )}
 
-                      <button
-                        type="button"
-                        onClick={handleDownloadBackupCodes}
-                        className="flex-1 py-1.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-200 text-xs font-medium text-white dark:text-stone-900 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download .txt</span>
-                      </button>
+              {/* Active State View: Already enabled */}
+              {twoFactorEnabled && (
+                <div className={`p-5 rounded-2xl border ${
+                  isDark ? "bg-stone-900/60 border-stone-800" : "bg-stone-50/70 border-stone-200"
+                } space-y-5 mt-4`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left: Pairing Info */}
+                    <div className="flex items-center gap-4">
+                      {twoFactorQrCode ? (
+                        <div className="w-20 h-20 rounded-xl bg-white p-1.5 border border-stone-200 shadow-sm flex items-center justify-center shrink-0">
+                          <img
+                            src={twoFactorQrCode}
+                            alt="2FA QR Code"
+                            className="w-full h-full object-contain rounded-lg"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                          <ShieldCheck className="w-8 h-8" />
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <label className={`text-xs font-medium block ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                          Active Secret Key
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <code className={`px-2 py-1 rounded-lg font-mono text-xs font-semibold ${
+                            isDark ? "bg-stone-800 text-stone-200" : "bg-stone-200/70 text-stone-800"
+                          }`}>
+                            {twoFactorSecret || "Configured"}
+                          </code>
+                          {twoFactorSecret && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(twoFactorSecret);
+                                setCopiedKey(true);
+                                showToast("Secret key copied");
+                                setTimeout(() => setCopiedKey(false), 2000);
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                isDark ? "hover:bg-stone-800 text-stone-400 hover:text-white" : "hover:bg-stone-200 text-stone-500 hover:text-stone-900"
+                              }`}
+                              title="Copy Secret Key"
+                            >
+                              {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Authenticator protection is armed
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Emergency Backup Codes */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className={`text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                          Recovery Codes
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleRegenerateBackupCodes}
+                          className={`text-[11px] font-medium flex items-center gap-1 cursor-pointer ${
+                            isDark ? "text-stone-400 hover:text-white" : "text-stone-500 hover:text-stone-900"
+                          }`}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Regenerate</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {backupCodes.map((code, idx) => (
+                          <div
+                            key={idx}
+                            className={`py-1 px-2 rounded-lg text-center font-mono text-[11px] font-medium border ${
+                              isDark ? "bg-stone-900 border-stone-800 text-stone-300" : "bg-white border-stone-200 text-stone-800"
+                            }`}
+                          >
+                            {code}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(backupCodes.join("\n"));
+                            setCopiedCodes(true);
+                            showToast("Backup codes copied");
+                            setTimeout(() => setCopiedCodes(false), 2000);
+                          }}
+                          className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                            isDark ? "bg-stone-800 border-stone-700 text-stone-200 hover:bg-stone-700" : "bg-stone-100 border-stone-200 text-stone-700 hover:bg-stone-200"
+                          }`}
+                        >
+                          {copiedCodes ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedCodes ? "Copied" : "Copy Codes"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadBackupCodes}
+                          className={`flex-1 py-1 px-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                            isDark ? "bg-white text-stone-900 hover:bg-stone-200" : "bg-stone-900 text-white hover:bg-stone-800"
+                          }`}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download .txt</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* ========================================================= */}
-            {/* 3. ADMIN CREDENTIALS: EMAIL & PASSCODE                    */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-6`}>
-              <div className="flex items-center gap-2.5 pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${isDark ? "bg-stone-800 text-stone-200" : "bg-stone-100 text-stone-800"}`}>
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold tracking-tight">Admin Login Email & Passcode</h2>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                    Update the credentials required to log into the Design Nayan administrative panel
-                  </p>
-                </div>
-              </div>
+            {/* 3. ADMIN CREDENTIALS */}
+            <div className={`pt-2 pb-6 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"} space-y-6`}>
+              <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                Admin Credentials
+              </h2>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Form A: Change Email */}
-                <form onSubmit={handleUpdateEmail} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium">Admin Notification & Login Email</label>
-                    <p className="text-[11px] text-stone-400">Current email: {adminEmail}</p>
-                  </div>
-
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Email Form */}
+                <form onSubmit={handleUpdateEmail} className="space-y-3">
+                  <label className={`block text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                    Admin Email
+                  </label>
                   <div className="relative">
                     <input
                       type="email"
@@ -5286,113 +5596,101 @@ export default function AdminDashboardPage() {
                       onChange={(e) => setEmailInput(e.target.value)}
                       required
                       placeholder="admin@designnayan.com"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700 text-xs focus:bg-white dark:focus:bg-stone-800 focus:outline-none transition-all"
+                      className={`w-full pl-9 pr-3.5 py-2.5 rounded-xl text-xs transition-all border ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder:text-stone-500 focus:border-stone-600 focus:outline-none"
+                          : "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
+                      }`}
                     />
-                    <Mail className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+                    <Mail className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-3" />
                   </div>
-
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-full bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-200 text-white dark:text-stone-900 font-medium text-xs transition-all shadow-xs cursor-pointer"
+                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                      isDark ? "bg-white text-stone-900 hover:bg-stone-200" : "bg-stone-900 text-white hover:bg-stone-800"
+                    }`}
                   >
-                    Save Email Address
+                    Save Email
                   </button>
                 </form>
 
-                {/* Form B: Change Passcode */}
-                <form onSubmit={handleUpdatePasscode} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium">Change Admin Passcode</label>
-                    <p className="text-[11px] text-stone-400">Set a secure passcode of at least 6 characters</p>
-                  </div>
+                {/* Passcode Form */}
+                <form onSubmit={handleUpdatePasscode} className="space-y-3">
+                  <label className={`block text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                    Admin Passcode
+                  </label>
 
                   {passcodeError && (
-                    <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2 font-medium">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{passcodeError}</span>
                     </div>
                   )}
 
                   {passcodeSuccess && (
-                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs flex items-center gap-2 font-medium">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span>{passcodeSuccess}</span>
                     </div>
                   )}
 
-                  {/* Current Passcode */}
-                  <div>
-                    <label className="block text-[11px] text-stone-500 dark:text-stone-400 mb-1">Current Passcode *</label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPasscode ? "text" : "password"}
-                        value={currentPasscodeInput}
-                        onChange={(e) => setCurrentPasscodeInput(e.target.value)}
-                        required
-                        placeholder="Enter current passcode (e.g. nayan2026)"
-                        className="w-full pl-10 pr-10 py-2.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700 text-xs focus:bg-white dark:focus:bg-stone-800 focus:outline-none transition-all"
-                      />
-                      <Key className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPasscode(!showCurrentPasscode)}
-                        className="absolute right-3.5 top-3 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPasscode ? "text" : "password"}
+                      value={currentPasscodeInput}
+                      onChange={(e) => setCurrentPasscodeInput(e.target.value)}
+                      required
+                      placeholder="Current passcode"
+                      className={`w-full pl-9 pr-9 py-2.5 rounded-xl text-xs transition-all border ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder:text-stone-500 focus:border-stone-600 focus:outline-none"
+                          : "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
+                      }`}
+                    />
+                    <Key className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-3" />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPasscode(!showCurrentPasscode)}
+                      className="absolute right-3 top-3 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
-                  {/* New Passcode */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-stone-500 dark:text-stone-400 mb-1">New Passcode *</label>
-                      <div className="relative">
-                        <input
-                          type={showNewPasscode ? "text" : "password"}
-                          value={newPasscodeInput}
-                          onChange={(e) => setNewPasscodeInput(e.target.value)}
-                          required
-                          minLength={6}
-                          placeholder="Min 6 characters"
-                          className="w-full px-3.5 py-2.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700 text-xs focus:bg-white dark:focus:bg-stone-800 focus:outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] text-stone-500 dark:text-stone-400 mb-1">Confirm New Passcode *</label>
-                      <input
-                        type={showNewPasscode ? "text" : "password"}
-                        value={confirmPasscodeInput}
-                        onChange={(e) => setConfirmPasscodeInput(e.target.value)}
-                        required
-                        minLength={6}
-                        placeholder="Repeat new passcode"
-                        className="w-full px-3.5 py-2.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700 text-xs focus:bg-white dark:focus:bg-stone-800 focus:outline-none transition-all"
-                      />
-                    </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <input
+                      type={showNewPasscode ? "text" : "password"}
+                      value={newPasscodeInput}
+                      onChange={(e) => setNewPasscodeInput(e.target.value)}
+                      required
+                      minLength={6}
+                      placeholder="New passcode"
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs transition-all border ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder:text-stone-500 focus:border-stone-600 focus:outline-none"
+                          : "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
+                      }`}
+                    />
+                    <input
+                      type={showNewPasscode ? "text" : "password"}
+                      value={confirmPasscodeInput}
+                      onChange={(e) => setConfirmPasscodeInput(e.target.value)}
+                      required
+                      minLength={6}
+                      placeholder="Confirm passcode"
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs transition-all border ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder:text-stone-500 focus:border-stone-600 focus:outline-none"
+                          : "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none"
+                      }`}
+                    />
                   </div>
-
-                  {/* Strength indicator */}
-                  {newPasscodeInput && (
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="text-stone-400">Strength:</span>
-                      <span className={`font-semibold ${
-                        newPasscodeInput.length < 6
-                          ? "text-rose-500"
-                          : newPasscodeInput.length < 9
-                          ? "text-amber-500"
-                          : "text-emerald-500"
-                      }`}>
-                        {newPasscodeInput.length < 6 ? "Too Short" : newPasscodeInput.length < 9 ? "Good" : "Strong"}
-                      </span>
-                    </div>
-                  )}
 
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-full bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-200 text-white dark:text-stone-900 font-medium text-xs transition-all shadow-xs cursor-pointer"
+                    className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                      isDark ? "bg-white text-stone-900 hover:bg-stone-200" : "bg-stone-900 text-white hover:bg-stone-800"
+                    }`}
                   >
                     Update Passcode
                   </button>
@@ -5400,26 +5698,17 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* ========================================================= */}
-            {/* 4. SYSTEM & SESSION PREFERENCES                           */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-6`}>
-              <div className="flex items-center gap-2.5 pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${isDark ? "bg-stone-800 text-stone-200" : "bg-stone-100 text-stone-800"}`}>
-                  <Sliders className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold tracking-tight">System & Session Preferences</h2>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                    Inactivity logout policies and realtime audio notifications
-                  </p>
-                </div>
-              </div>
+            {/* 4. SYSTEM PREFERENCES */}
+            <div className={`pt-2 pb-6 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"} space-y-4`}>
+              <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                System Preferences
+              </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                {/* Session Inactivity Timeout */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium">Inactivity Auto-Logout</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className={`block text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                    Auto-Logout Timeout
+                  </label>
                   <select
                     value={sessionTimeout}
                     onChange={(e) => {
@@ -5428,22 +5717,24 @@ export default function AdminDashboardPage() {
                       try {
                         localStorage.setItem("dn_admin_session_timeout", val);
                       } catch {}
-                      showToast(`Session inactivity set to: ${val}`);
+                      showToast(`Inactivity timeout set to: ${val}`);
                     }}
-                    className="w-full px-3.5 py-2.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700 text-xs focus:outline-none"
+                    className={`w-full px-3 py-2 rounded-xl text-xs border cursor-pointer ${
+                      isDark ? "bg-stone-900 border-stone-800 text-stone-200 focus:outline-none" : "bg-white border-stone-200 text-stone-900 focus:outline-none"
+                    }`}
                   >
-                    <option value="15m">15 Minutes (Strict Security)</option>
-                    <option value="30m">30 Minutes (Recommended)</option>
-                    <option value="2h">2 Hours (Default)</option>
-                    <option value="12h">12 Hours (Workday Session)</option>
-                    <option value="never">Never (Keep Session Active)</option>
+                    <option value="15m">15 Minutes</option>
+                    <option value="30m">30 Minutes</option>
+                    <option value="2h">2 Hours</option>
+                    <option value="12h">12 Hours</option>
+                    <option value="never">Never</option>
                   </select>
-                  <p className="text-[11px] text-stone-400">Terminates session if dashboard is unattended</p>
                 </div>
 
-                {/* Inquiry Audio Alert */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium">Inquiry Audio Alert</label>
+                <div className="space-y-1.5">
+                  <label className={`block text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                    Inquiry Sound Alert
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
@@ -5452,183 +5743,110 @@ export default function AdminDashboardPage() {
                       try {
                         localStorage.setItem("dn_admin_sound_alert", next ? "true" : "false");
                       } catch {}
-                      showToast(next ? "Inquiry sound alerts enabled" : "Inquiry sound alerts muted");
+                      if (next) {
+                        playInquiryChime();
+                      }
+                      showToast(next ? "Sound alerts enabled (preview chime played)" : "Sound alerts muted");
                     }}
-                    className={`w-full py-2.5 px-3.5 rounded-2xl border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
                       soundAlertEnabled
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                        : "bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-500"
+                        ? isDark ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : isDark ? "bg-stone-900 border-stone-800 text-stone-400" : "bg-white border-stone-200 text-stone-600"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      {soundAlertEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                      <span>{soundAlertEnabled ? "Sound Alert ON" : "Sound Alert MUTED"}</span>
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase">{soundAlertEnabled ? "Active" : "Off"}</span>
-                  </button>
-                  <p className="text-[11px] text-stone-400">Plays notification chime on incoming client inquiry</p>
-                </div>
-
-                {/* Browser Push Alerts */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium">Desktop Push Alerts</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !pushNotificationEnabled;
-                      setPushNotificationEnabled(next);
-                      try {
-                        localStorage.setItem("dn_admin_push_alerts", next ? "true" : "false");
-                      } catch {}
-                      showToast(next ? "Browser push notifications enabled" : "Push notifications disabled");
-                    }}
-                    className={`w-full py-2.5 px-3.5 rounded-2xl border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
-                      pushNotificationEnabled
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                        : "bg-stone-100 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-500"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Bell className="w-4 h-4" />
-                      <span>{pushNotificationEnabled ? "Push ON" : "Push OFF"}</span>
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase">{pushNotificationEnabled ? "Active" : "Off"}</span>
-                  </button>
-                  <p className="text-[11px] text-stone-400">Receives native OS notifications for quotes</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ========================================================= */}
-            {/* 5. DATABASE BACKUP & DISASTER RECOVERY                    */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-6`}>
-              <div className="flex items-center gap-2.5 pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${isDark ? "bg-stone-800 text-stone-200" : "bg-stone-100 text-stone-800"}`}>
-                  <Download className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold tracking-tight">Database Backup & Disaster Recovery</h2>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">
-                    Export full JSON snapshot or restore database in the event of hardware replacement
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* 1. Export */}
-                <div className={`p-5 rounded-2xl border ${isDark ? "bg-stone-950 border-stone-800" : "bg-stone-50/70 border-stone-200/80"} flex flex-col justify-between gap-4`}>
-                  <div className="space-y-1">
-                    <h3 className="text-xs font-semibold">1. Download System Backup</h3>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
-                      Exports Projects, Studio, Build, Stays, Creators, Finances, About, and Contact data into a timestamped JSON file.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleFullBackupDownload}
-                    className="w-full py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-white dark:hover:bg-stone-200 text-white dark:text-stone-900 font-medium text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download Backup (.json)</span>
+                    <span className="flex items-center gap-1.5">
+                      {soundAlertEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                      <span>{soundAlertEnabled ? "Sound ON" : "Sound Muted"}</span>
+                    </span>
+                    <span className="text-[10px] font-semibold">{soundAlertEnabled ? "Active" : "Off"}</span>
                   </button>
                 </div>
 
-                {/* 2. Restore */}
-                <div className={`p-5 rounded-2xl border ${isDark ? "bg-stone-950 border-stone-800" : "bg-stone-50/70 border-stone-200/80"} flex flex-col justify-between gap-4`}>
-                  <div className="space-y-1">
-                    <h3 className="text-xs font-semibold">2. Restore from Backup</h3>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
-                      Upload a previously exported backup file to restore catalog items, finance records, and page copy.
-                    </p>
-                  </div>
-                  <label className="w-full py-2 px-3 rounded-xl bg-stone-200/80 dark:bg-stone-800 hover:bg-stone-300 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 font-medium text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer text-center">
-                    <UploadCloud className="w-3.5 h-3.5" />
-                    <span>Upload & Restore (.json)</span>
-                    <input
-                      type="file"
-                      accept=".json"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleRestoreFileSelect(file);
-                        e.target.value = "";
-                      }}
-                    />
+                <div className="space-y-1.5">
+                  <label className={`block text-xs font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                    Desktop Push Alerts
                   </label>
-                </div>
-
-                {/* 3. Reset Demo */}
-                <div className={`p-5 rounded-2xl border ${isDark ? "bg-stone-950 border-stone-800" : "bg-stone-50/70 border-stone-200/80"} flex flex-col justify-between gap-4`}>
-                  <div className="space-y-1">
-                    <h3 className="text-xs font-semibold">3. Reset Demo Defaults</h3>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
-                      Clears local browser cache overrides and restores initial sample data across all modules.
-                    </p>
-                  </div>
                   <button
                     type="button"
-                    onClick={() => setResetConfirmOpen(true)}
-                    className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 font-medium text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    onClick={handleTogglePushNotifications}
+                    className={`w-full py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-between transition-all cursor-pointer ${
+                      pushNotificationEnabled
+                        ? isDark ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : isDark ? "bg-stone-900 border-stone-800 text-stone-400" : "bg-white border-stone-200 text-stone-600"
+                    }`}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset Sample Data</span>
+                    <span className="flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5" />
+                      <span>{pushNotificationEnabled ? "Push ON" : "Push OFF"}</span>
+                    </span>
+                    <span className="text-[10px] font-semibold">{pushNotificationEnabled ? "Active" : "Off"}</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* ========================================================= */}
-            {/* 6. ACTIVE SESSION & SECURITY AUDIT                        */}
-            {/* ========================================================= */}
-            <div className={`p-6 sm:p-7 rounded-3xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-white border-stone-200/60 shadow-2xs"} space-y-4`}>
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${isDark ? "bg-stone-800 text-stone-200" : "bg-stone-100 text-stone-800"}`}>
-                    <Smartphone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold tracking-tight">Active Session & Security Diagnostics</h2>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">Current logged in admin workstation</p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[11px] font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Online Now</span>
-                </span>
-              </div>
+            {/* 5. DATABASE BACKUP & RESTORE */}
+            <div className={`pt-2 pb-6 border-b ${isDark ? "border-stone-800" : "border-stone-200/80"} space-y-4`}>
+              <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                Database Backup & Restore
+              </h2>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div className="p-3 rounded-xl bg-stone-50/60 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <span className="text-[10px] text-stone-400 block mb-0.5">Device & Browser</span>
-                  <strong className="font-medium text-stone-800 dark:text-stone-200">Windows NT / Modern Browser</strong>
-                </div>
-                <div className="p-3 rounded-xl bg-stone-50/60 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <span className="text-[10px] text-stone-400 block mb-0.5">Assam HQ Gateway</span>
-                  <strong className="font-medium text-stone-800 dark:text-stone-200">103.28.192.14 (Guwahati, IN)</strong>
-                </div>
-                <div className="p-3 rounded-xl bg-stone-50/60 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <span className="text-[10px] text-stone-400 block mb-0.5">Encryption Standard</span>
-                  <strong className="font-medium text-stone-800 dark:text-stone-200">TLS 1.3 / AES-256 Storage</strong>
-                </div>
-                <div className="p-3 rounded-xl bg-stone-50/60 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-800">
-                  <span className="text-[10px] text-stone-400 block mb-0.5">Admin Account</span>
-                  <strong className="font-medium text-stone-800 dark:text-stone-200 truncate block">{adminEmail}</strong>
-                </div>
-              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleFullBackupDownload}
+                  className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center gap-2 ${
+                    isDark ? "bg-white text-stone-900 hover:bg-stone-200" : "bg-stone-900 text-white hover:bg-stone-800"
+                  }`}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Backup (.json)</span>
+                </button>
 
-              {/* End Session & Sign Out */}
-              <div className="pt-4 border-t border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="text-xs text-stone-500 dark:text-stone-400">
-                  <span>Terminate current active administrator session and lock dashboard.</span>
+                <label className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-2 ${
+                  isDark ? "bg-stone-900 border-stone-800 text-stone-200 hover:bg-stone-800" : "bg-white border-stone-200 text-stone-800 hover:bg-stone-50"
+                }`}>
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Upload & Restore (.json)</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleRestoreFileSelect(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* 6. SESSION & SIGN OUT */}
+            <div className="pt-2 pb-6 space-y-4">
+              <h2 className={`text-sm font-semibold tracking-tight ${isDark ? "text-stone-100" : "text-stone-900"}`}>
+                Session & Account
+              </h2>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-xs">
+                  <span className={`inline-flex items-center gap-1.5 ${isDark ? "text-stone-400" : "text-stone-600"}`}>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>Logged in as <strong>{adminEmail}</strong></span>
+                  </span>
                 </div>
+
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="px-5 py-2.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shadow-2xs"
+                  className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-2 self-start sm:self-auto ${
+                    isDark
+                      ? "bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30"
+                      : "bg-rose-50 hover:bg-rose-100 text-rose-600 border-rose-200"
+                  }`}
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out of Dashboard</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>
@@ -8920,55 +9138,6 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* MODAL: RESET DEMO DATA CONFIRMATION                       */}
-      {/* ========================================================= */}
-      {resetConfirmOpen && (
-        <div className="fixed inset-0 z-[200] bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className={`border rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 ${
-            isDark ? "bg-stone-900 border-stone-800 text-stone-100" : "bg-white border-stone-200/80 text-stone-900"
-          }`}>
-            <div className="flex items-center gap-3 pb-3 border-b border-stone-100 dark:border-stone-800">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold tracking-tight">Reset to Demo Defaults?</h3>
-                <p className="text-xs text-stone-500 dark:text-stone-400 font-normal">Reverts to initial agency sample items</p>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
-              <p>
-                This will clear all browser storage overrides and reload default sample projects, creators, stay listings, services, and transactions.
-              </p>
-              <p className="text-stone-400 text-[11px]">
-                Tip: You can export a backup before resetting if you want to keep your current custom data.
-              </p>
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setResetConfirmOpen(false)}
-                className={`px-4 py-2 rounded-full text-xs font-medium cursor-pointer ${
-                  isDark ? "bg-stone-800 hover:bg-stone-700 text-stone-300" : "bg-stone-100 hover:bg-stone-200 text-stone-700"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleResetDemoData}
-                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs shadow-xs cursor-pointer flex items-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Yes, Reset to Defaults</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

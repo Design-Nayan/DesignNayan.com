@@ -52,9 +52,9 @@ const REACH_TIERS: (ReachTier | "All")[] = [
 
 const BUDGET_OPTIONS = [
   { label: "All Budgets", value: "All" },
-  { label: "Under $1,500", value: "under-1500" },
-  { label: "$1,500 - $3,000", value: "1500-3000" },
-  { label: "$3,000+", value: "above-3000" },
+  { label: "Under ₹15,000", value: "under-15000" },
+  { label: "₹15,000 - ₹25,000", value: "15000-25000" },
+  { label: "₹25,000+", value: "above-25000" },
 ];
 
 // Levenshtein distance for forgiving fuzzy matching
@@ -134,7 +134,24 @@ export function CreatorsSearchView() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setAllCreators(parsed);
+          const migrated = parsed.map((c: Creator) => {
+            let startingRate = c.startingRate || "₹15,000";
+            if (startingRate.includes("$")) {
+              const num = parseInt(startingRate.replace(/[^0-9]/g, ""), 10);
+              startingRate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
+            }
+            const packages = (c.packages || []).map((pkg) => {
+              let priceEstimate = pkg.priceEstimate || "";
+              if (priceEstimate.includes("$")) {
+                const num = parseInt(priceEstimate.replace(/[^0-9]/g, ""), 10);
+                priceEstimate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
+              }
+              return { ...pkg, priceEstimate };
+            });
+            return { ...c, startingRate, packages };
+          });
+          setAllCreators(migrated);
+          localStorage.setItem("dn_creators", JSON.stringify(migrated));
         }
       } catch {}
     }
@@ -324,9 +341,9 @@ export function CreatorsSearchView() {
     if (selectedBudget !== "All") {
       list = list.filter((c) => {
         const numRate = parseInt(c.startingRate.replace(/[^0-9]/g, ""), 10);
-        if (selectedBudget === "under-1500") return numRate < 1500;
-        if (selectedBudget === "1500-3000") return numRate >= 1500 && numRate <= 3000;
-        if (selectedBudget === "above-3000") return numRate > 3000;
+        if (selectedBudget === "under-15000") return numRate < 15000;
+        if (selectedBudget === "15000-25000") return numRate >= 15000 && numRate <= 25000;
+        if (selectedBudget === "above-25000") return numRate > 25000;
         return true;
       });
     }

@@ -16,6 +16,8 @@ import {
   History,
   Filter,
   ChevronDown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   IncomeRecord,
@@ -40,6 +42,7 @@ export default function AllTransactionsPage() {
   // Authentication
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState("");
+  const [showPasscode, setShowPasscode] = useState(false);
   const [authError, setAuthError] = useState("");
 
   // Data states
@@ -74,45 +77,75 @@ export default function AllTransactionsPage() {
       const storedIncome = localStorage.getItem(DN_ADMIN_INCOME_KEY);
       if (storedIncome) {
         const parsed = JSON.parse(storedIncome);
-        if (Array.isArray(parsed) && parsed.length >= initialIncomeRecords.length) {
-          setIncomeRecords(parsed);
+        if (Array.isArray(parsed)) {
+          // Filter out legacy dummy records so finance stays clean
+          const cleanRecords = parsed.filter(
+            (r: any) =>
+              r &&
+              typeof r.id === "string" &&
+              !r.id.startsWith("inc_") &&
+              r.clientName !== "Barpeta Commercial Complex" &&
+              r.clientName !== "Dr. B. Sarma"
+          );
+          setIncomeRecords(cleanRecords);
+          localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(cleanRecords));
         } else {
-          setIncomeRecords(initialIncomeRecords);
-          localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(initialIncomeRecords));
+          setIncomeRecords([]);
+          localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify([]));
         }
       } else {
-        setIncomeRecords(initialIncomeRecords);
-        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(initialIncomeRecords));
+        setIncomeRecords([]);
+        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify([]));
       }
 
       const storedLogs = localStorage.getItem(DN_ADMIN_LOGS_KEY);
       if (storedLogs) {
         const parsedLogs = JSON.parse(storedLogs);
-        if (Array.isArray(parsedLogs) && parsedLogs.length >= initialAuditLogs.length) {
-          setAuditLogs(parsedLogs);
+        if (Array.isArray(parsedLogs)) {
+          // Filter out legacy dummy logs so history stays clean
+          const cleanLogs = parsedLogs.filter(
+            (l: any) =>
+              l &&
+              typeof l.id === "string" &&
+              !l.id.startsWith("log_") &&
+              !l.description?.includes("Barpeta Commercial Complex")
+          );
+          setAuditLogs(cleanLogs);
+          localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(cleanLogs));
         } else {
-          setAuditLogs(initialAuditLogs);
-          localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(initialAuditLogs));
+          setAuditLogs([]);
+          localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify([]));
         }
       } else {
-        setAuditLogs(initialAuditLogs);
-        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(initialAuditLogs));
+        setAuditLogs([]);
+        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify([]));
       }
     } catch {
-      setIncomeRecords(initialIncomeRecords);
-      setAuditLogs(initialAuditLogs);
+      setIncomeRecords([]);
+      setAuditLogs([]);
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const savedPasscode = typeof window !== "undefined" ? localStorage.getItem("dn_admin_passcode") : null;
-    if (["nayan2026", "admin123", "admin", savedPasscode].filter(Boolean).includes(passcode)) {
+    setAuthError("");
+    try {
+      const savedEmail = (typeof window !== "undefined" ? localStorage.getItem("dn_admin_email") : null) || "admin@designnayan.com";
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: savedEmail, password: passcode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setAuthError(data.error || "Incorrect passcode.");
+        return;
+      }
       setIsAuthenticated(true);
       localStorage.setItem(DN_ADMIN_AUTH_KEY, "true");
       setAuthError("");
-    } else {
-      setAuthError("Incorrect passcode.");
+    } catch {
+      setAuthError("Failed to authenticate with server.");
     }
   };
 
@@ -295,6 +328,12 @@ export default function AllTransactionsPage() {
       setAuditLogs(updatedLogs);
       localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
 
+      fetch("/api/finances/", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: record.id, log: newLog }),
+      }).catch((err) => console.error("Error deleting transaction in DB:", err));
+
       if (viewingDetail?.id === record.id) {
         setViewingDetail(null);
       }
@@ -316,14 +355,24 @@ export default function AllTransactionsPage() {
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <input
-                type="password"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Passcode (e.g. nayan2026)"
-                className="w-full px-4 py-3 rounded-2xl bg-stone-50 border border-stone-200/80 text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 transition-all"
-                autoFocus
-              />
+              <div className="relative">
+                <input
+                  type={showPasscode ? "text" : "password"}
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="Enter admin passcode"
+                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-stone-50 border border-stone-200/80 text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 transition-all"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscode(!showPasscode)}
+                  aria-label={showPasscode ? "Hide passcode" : "Show passcode"}
+                  className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
+                >
+                  {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {authError && <p className="text-rose-600 text-xs mt-1.5">{authError}</p>}
             </div>
             <button
@@ -363,6 +412,14 @@ export default function AllTransactionsPage() {
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Dashboard</span>
+            </Link>
+            <div className="h-3.5 w-px bg-stone-300/80 hidden sm:block" />
+            <Link href="/" target="_blank" className="inline-flex items-center select-none" title="Visit Design Nayan Website">
+              <img
+                src="/images/logo.png"
+                alt="Design Nayan"
+                className="h-6 w-auto object-contain"
+              />
             </Link>
             <div className="h-3.5 w-px bg-stone-300/80 hidden sm:block" />
             <div>

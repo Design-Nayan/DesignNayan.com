@@ -47,10 +47,10 @@ export const MATCHMAKER_FORMATS: MatchmakerFormatConfig[] = [
 ];
 
 export const MATCHMAKER_BUDGETS: MatchmakerBudgetConfig[] = [
-  { id: "starter", label: "Under $3k (Starter)" },
-  { id: "standard", label: "$3k - $8k Campaign" },
-  { id: "multi-creator", label: "$8k - $20k Multi-Creator" },
-  { id: "enterprise", label: "$20k+ Enterprise Retainer" },
+  { id: "starter", label: "Under ₹25k (Starter)" },
+  { id: "standard", label: "₹25k - ₹75k Campaign" },
+  { id: "multi-creator", label: "₹75k - ₹2 Lakhs Multi-Creator" },
+  { id: "enterprise", label: "₹2 Lakhs+ Enterprise Retainer" },
 ];
 
 /**

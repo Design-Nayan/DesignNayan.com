@@ -20,11 +20,13 @@ import { CreatorProfileModal } from "./components/CreatorProfileModal";
 import Lenis from "lenis";
 import { CampaignRosterBar } from "./components/CampaignRosterBar";
 import { CampaignBookingModal } from "./components/CampaignBookingModal";
+import { CreatorRegistrationModal } from "./components/CreatorRegistrationModal";
 
 export function CreatorsView() {
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
   const [quickViewCreator, setQuickViewCreator] = useState<Creator | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [allCreators, setAllCreators] = useState<Creator[]>(CREATORS_DATA);
   const lenisRef = React.useRef<Lenis | null>(null);
 
@@ -41,7 +43,7 @@ export function CreatorsView() {
   }, []);
 
   useEffect(() => {
-    // 1. Initialize Lenis for butter-smooth, luxury flowy momentum scroll
+    // Initialize Lenis smooth scrolling instance
     const lenis = new Lenis({
       duration: 1.25,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -55,17 +57,17 @@ export function CreatorsView() {
 
     lenisRef.current = lenis;
 
-    // Synchronize Lenis scroll position with GSAP ScrollTrigger
+    // Sync scroll events with ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
 
-    // Integrate with GSAP ticker for 60-120fps synchronized frame updates
+    // Bind Lenis animation frame step to GSAP ticker
     const tickerUpdate = (time: number) => {
       lenis.raf(time * 1000);
     };
     gsap.ticker.add(tickerUpdate);
     gsap.ticker.lagSmoothing(0);
 
-    // Give DOM images and layouts a brief moment to settle, then refresh ScrollTrigger
+    // Refresh triggers once layout dimensions have settled
     const timer = setTimeout(() => {
       ScrollTrigger.refresh();
     }, 200);
@@ -80,12 +82,12 @@ export function CreatorsView() {
 
   // Pause Lenis scrolling when modals are open to prevent background scrolling
   useEffect(() => {
-    if (isBookingOpen || quickViewCreator !== null) {
+    if (isBookingOpen || quickViewCreator !== null || isRegisterOpen) {
       lenisRef.current?.stop();
     } else {
       lenisRef.current?.start();
     }
-  }, [isBookingOpen, quickViewCreator]);
+  }, [isBookingOpen, quickViewCreator, isRegisterOpen]);
 
   // Selected creators objects
   const selectedCreators = allCreators.filter((c) =>
@@ -130,6 +132,7 @@ export function CreatorsView() {
       <CreatorsHero
         onExploreClick={scrollToDirectory}
         onBookClick={() => setIsBookingOpen(true)}
+        onRegisterClick={() => setIsRegisterOpen(true)}
       />
 
       {/* 2. Editorial Statement + 3-Portrait Row (Inspired by Reference Section 2) */}
@@ -169,8 +172,11 @@ export function CreatorsView() {
         onBookRoster={() => setIsBookingOpen(true)}
       />
 
-      {/* 7. Agency Guarantees & Escrow Confidence */}
-      <AgencyGuarantees onOpenBooking={() => setIsBookingOpen(true)} />
+      {/* 7. Agency Guarantees & Escrow Confidence + Creator Recruitment Banner */}
+      <AgencyGuarantees
+        onOpenBooking={() => setIsBookingOpen(true)}
+        onOpenCreatorRegister={() => setIsRegisterOpen(true)}
+      />
 
       {/* 8. Floating Campaign Shortlist Dock (Appears when 1+ creators selected) */}
       <CampaignRosterBar
@@ -204,6 +210,12 @@ export function CreatorsView() {
         onClose={() => setIsBookingOpen(false)}
         onRemoveCreator={handleRemoveCreator}
         onClearAll={handleClearAll}
+      />
+
+      {/* 11. Creator Roster Registration Modal */}
+      <CreatorRegistrationModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
       />
     </div>
   );

@@ -1,6 +1,5 @@
 export * from "./creators.types";
 export * from "./data";
-export * from "./creators.data";
 export * from "./CreatorsView";
 export * from "./components/CreatorsHero";
 export * from "./components/StatementEditorial";
@@ -11,6 +10,7 @@ export * from "./components/CreatorCard";
 export * from "./components/CreatorProfileModal";
 export * from "./components/CampaignRosterBar";
 export * from "./components/CampaignBookingModal";
+export * from "./components/CreatorRegistrationModal";
 export * from "./components/AgencyGuarantees";
 export * from "./components/SecondStatement";
 export * from "./CreatorsSearchView";

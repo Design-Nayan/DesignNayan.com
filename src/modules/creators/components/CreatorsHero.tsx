@@ -13,9 +13,14 @@ if (typeof window !== "undefined") {
 interface CreatorsHeroProps {
   onExploreClick: () => void;
   onBookClick: () => void;
+  onRegisterClick?: () => void;
 }
 
-export function CreatorsHero({ onExploreClick, onBookClick }: CreatorsHeroProps) {
+export function CreatorsHero({
+  onExploreClick,
+  onBookClick,
+  onRegisterClick,
+}: CreatorsHeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -151,31 +156,45 @@ export function CreatorsHero({ onExploreClick, onBookClick }: CreatorsHeroProps)
               </span>
             </h1>
 
-            {/* Action Buttons Row */}
-            <div className="mt-3 sm:mt-6 flex flex-wrap items-center justify-center md:justify-end gap-2.5 sm:gap-4 mr-1 sm:mr-2 md:mr-3 lg:mr-4 pr-0 md:pr-1">
+            {/* Action Buttons: Desktop (untouched horizontal line on right) | Tablet (horizontal line centered) | Mobile (balanced 2-tier layout) */}
+            <div className="mt-3 sm:mt-6 w-full max-w-sm sm:max-w-none flex flex-col sm:flex-row sm:flex-nowrap items-center justify-center md:justify-end gap-2 sm:gap-2.5 md:gap-4 mr-0 sm:mr-2 md:mr-3 lg:mr-4 pr-0 md:pr-1">
               
               {/* Button 1: Hire Creators Now (White -> Changes on Hover to Logo Brand Red with Animated Moving Gradient) */}
               <button
                 onClick={onBookClick}
-                className="relative overflow-hidden px-5 sm:px-7 py-2.5 sm:py-3 rounded-full font-bold text-xs sm:text-sm tracking-wider uppercase transition-all duration-300 shadow-xl active:scale-95 group hover:scale-[1.03] border border-white/30 bg-white hover:bg-[#dc2626] hover:border-[#dc2626] cursor-pointer"
+                className="w-full sm:w-auto relative overflow-hidden px-4 sm:px-4 md:px-7 py-2.5 sm:py-2.5 md:py-3 rounded-full font-bold text-xs md:text-sm tracking-wider uppercase transition-all duration-300 shadow-xl active:scale-95 group hover:scale-[1.03] border border-white/30 bg-white hover:bg-[#dc2626] hover:border-[#dc2626] cursor-pointer shrink-0 text-center flex items-center justify-center"
               >
                 {/* Active animated moving gradient that takes over the button on hover */}
                 <span className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-[#dc2626] via-rose-500 via-amber-500 to-[#b91c1c] animate-gradient-move transition-opacity duration-300 pointer-events-none" />
 
                 {/* Text: switches from dark to crisp white on hover */}
-                <span className="relative z-10 text-neutral-950 group-hover:text-white transition-colors duration-300">
+                <span className="relative z-10 text-neutral-950 group-hover:text-white transition-colors duration-300 whitespace-nowrap">
                   HIRE CREATORS NOW
                 </span>
               </button>
 
-              {/* Button 2: Explore Creators (Scrolls to Creators Directory Section) */}
-              <button
-                onClick={onExploreClick}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-red-400/80 backdrop-blur-md font-semibold text-xs sm:text-sm tracking-wider uppercase transition-all active:scale-95 flex items-center gap-2 group cursor-pointer"
-              >
-                <span>EXPLORE CREATORS</span>
-                <ArrowDown className="w-3.5 h-3.5 text-red-400 group-hover:translate-y-0.5 transition-transform" />
-              </button>
+              {/* Secondary Buttons: 50/50 Grid on mobile, inline flex-nowrap on tablet & desktop */}
+              <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 md:gap-4 shrink-0">
+                {/* Button 2: Explore Creators (Scrolls to Creators Directory Section) */}
+                <button
+                  onClick={onExploreClick}
+                  className="w-full sm:w-auto px-2 xs:px-3 sm:px-4 md:px-6 py-2.5 sm:py-2.5 md:py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 hover:border-red-400/80 backdrop-blur-md font-semibold text-[10px] xs:text-[11px] sm:text-xs md:text-sm tracking-wider uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5 sm:gap-2 group cursor-pointer whitespace-nowrap"
+                >
+                  <span>EXPLORE CREATORS</span>
+                  <ArrowDown className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-red-400 group-hover:translate-y-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* Button 3: Creator Registration / Join Roster */}
+                {onRegisterClick && (
+                  <button
+                    onClick={onRegisterClick}
+                    className="w-full sm:w-auto px-2 xs:px-3 sm:px-4 md:px-6 py-2.5 sm:py-2.5 md:py-3 rounded-full bg-red-950/70 hover:bg-red-900/90 text-red-200 hover:text-white border border-red-700/60 hover:border-red-500 backdrop-blur-md font-semibold text-[10px] xs:text-[11px] sm:text-xs md:text-sm tracking-wider uppercase transition-all active:scale-95 flex items-center justify-center gap-1.5 sm:gap-2 group cursor-pointer shadow-lg whitespace-nowrap"
+                  >
+                    <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-red-400 group-hover:scale-110 transition-transform shrink-0" />
+                    <span>JOIN AS CREATOR</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

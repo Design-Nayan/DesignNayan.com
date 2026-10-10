@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Send,
   Calendar,
-  DollarSign,
   Building,
   User,
   Mail,
@@ -18,6 +17,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Creator, CampaignInquiry } from "../creators.types";
+import { addInquiry } from "@/app/admin/inquiries-shared";
 
 interface CampaignBookingModalProps {
   isOpen: boolean;
@@ -42,7 +42,7 @@ export function CampaignBookingModal({
     email: "",
     phone: "",
     objective: "Viral Brand Growth",
-    budgetBracket: "$5,000 – $10,000",
+    budgetBracket: "₹50,000 – ₹1,00,000",
     timeline: "Next 2 Weeks",
     notes: "",
   });
@@ -51,6 +51,19 @@ export function CampaignBookingModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      addInquiry({
+        name: `${formData.clientName} (${formData.companyName || "Brand Client"})`,
+        phone: formData.phone || "Not provided",
+        email: formData.email,
+        service: `Creator Campaign • ${formData.objective}`,
+        budget: formData.budgetBracket,
+        message: `Timeline: ${formData.timeline} | Creators (${selectedCreators.length}): ${selectedCreators.map((c) => c.name).join(", ")} | Notes: ${formData.notes || "None"}`,
+        location: "Campaign Client",
+        status: "NEW",
+        date: "Just now",
+      });
+    } catch {}
     setSubmitted(true);
   };
 
@@ -306,10 +319,10 @@ export function CampaignBookingModal({
                       onChange={(e) => setFormData({ ...formData, budgetBracket: e.target.value })}
                       className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 text-xs bg-white text-neutral-800 outline-none focus:border-red-500"
                     >
-                      <option value="$2,000 – $5,000">$2,000 – $5,000</option>
-                      <option value="$5,000 – $10,000">$5,000 – $10,000</option>
-                      <option value="$10,000 – $25,000">$10,000 – $25,000</option>
-                      <option value="$25,000+ Enterprise">$25,000+ Enterprise</option>
+                      <option value="₹25,000 – ₹50,000">₹25,000 – ₹50,000</option>
+                      <option value="₹50,000 – ₹1,00,000">₹50,000 – ₹1,00,000</option>
+                      <option value="₹1,00,000 – ₹2,50,000">₹1,00,000 – ₹2,50,000</option>
+                      <option value="₹2,50,000+ Enterprise">₹2,50,000+ Enterprise</option>
                     </select>
                   </div>
                 </div>

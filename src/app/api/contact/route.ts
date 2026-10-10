@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ContactInquiry, ApiResponse } from "@/types";
+import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +36,24 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    // Note: Ready for database integration (Prisma / Drizzle / Supabase / MongoDB)
+    // Save directly to Supabase PostgreSQL database
+    try {
+      await db.inquiry.create({
+        data: {
+          id: inquiryRecord.id,
+          name: inquiryRecord.name,
+          email: inquiryRecord.email,
+          phone: inquiryRecord.phone || inquiryRecord.company || null,
+          service: inquiryRecord.serviceRequested || "General Inquiry",
+          budget: inquiryRecord.budgetRange || null,
+          message: inquiryRecord.message,
+          location: "India",
+          status: "NEW",
+        },
+      });
+    } catch (dbErr) {
+      console.error("Database save failed (falling back):", dbErr);
+    }
 
     return NextResponse.json<ApiResponse<ContactInquiry>>(
       {

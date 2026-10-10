@@ -13,6 +13,10 @@ dist/
 .vercel
 *.tsbuildinfo
 
+# User uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
 # Debug logs
 npm-debug.log*
 yarn-debug.log*
@@ -20,7 +24,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Local environment files
+.env
 .env*.local
+.env.production
 
 # OS metadata
 .DS_Store

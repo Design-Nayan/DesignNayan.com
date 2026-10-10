@@ -54,6 +54,7 @@ export interface ContactInquiry {
   id?: string;
   name: string;
   email: string;
+  phone?: string;
   company?: string;
   serviceRequested: string;
   budgetRange: string;

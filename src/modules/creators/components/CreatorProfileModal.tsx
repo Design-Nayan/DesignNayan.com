@@ -20,7 +20,7 @@ import {
   Briefcase,
   Layers,
   BarChart3,
-  DollarSign,
+  IndianRupee,
   Tag,
   MapPin,
   CheckCircle2,
@@ -184,7 +184,7 @@ export function CreatorProfileModal({
               <div className="bg-[#fafafa] border border-neutral-200/80 rounded-2xl p-4 space-y-2.5 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-neutral-200/60">
                   <span className="text-neutral-500 font-medium flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5 text-neutral-400" />
+                    <IndianRupee className="w-3.5 h-3.5 text-neutral-400" />
                     Starting Rate
                   </span>
                   <span className="font-bold text-neutral-900">{creator.startingRate}</span>

@@ -21,9 +21,13 @@ const ICON_MAP = {
 
 interface AgencyGuaranteesProps {
   onOpenBooking: () => void;
+  onOpenCreatorRegister?: () => void;
 }
 
-export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
+export function AgencyGuarantees({
+  onOpenBooking,
+  onOpenCreatorRegister,
+}: AgencyGuaranteesProps) {
   const containerRef = useRef<HTMLElement>(null);
 
   useGSAP(
@@ -105,6 +109,27 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
           scrollTrigger: {
             trigger: ".custom-campaign-banner",
             start: "top 90%",
+            end: "bottom top",
+            toggleActions: "play reverse play reverse",
+            fastScrollEnd: true,
+          },
+        }
+      );
+
+      // Creator Register Banner gentle reveal
+      gsap.fromTo(
+        ".creator-register-banner",
+        { y: 30, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.85,
+          ease: "power2.out",
+          force3D: true,
+          overwrite: "auto",
+          scrollTrigger: {
+            trigger: ".creator-register-banner",
+            start: "top 92%",
             end: "bottom top",
             toggleActions: "play reverse play reverse",
             fastScrollEnd: true,
@@ -195,6 +220,35 @@ export function AgencyGuarantees({ onOpenBooking }: AgencyGuaranteesProps) {
             </button>
           </div>
         </div>
+
+        {/* Creator Roster Application Banner */}
+        {onOpenCreatorRegister && (
+          <div className="creator-register-banner mt-6 rounded-3xl bg-gradient-to-r from-[#170509] via-[#0d0305] to-[#170509] text-white p-7 sm:p-10 lg:p-12 border border-red-900/40 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-80 h-80 bg-red-600/10 blur-3xl rounded-full pointer-events-none" />
+
+            <div className="space-y-2 text-center md:text-left relative z-10">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-red-400 font-bold block">
+                TALENT RECRUITMENT • OFFLINE TALENT AGENCY
+              </span>
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold uppercase tracking-tight text-white">
+                ARE YOU A CREATOR? GET LISTED ON DESIGN NAYAN
+              </h3>
+              <p className="text-xs sm:text-sm text-neutral-400 max-w-xl font-light leading-relaxed">
+                Join our exclusive network of North-East & national creative talents. Get connected to funded brand campaigns, commercial productions, and offline studio support.
+              </p>
+            </div>
+
+            <div className="relative z-10 shrink-0">
+              <button
+                onClick={onOpenCreatorRegister}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-lg shadow-red-950 cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <span>APPLY TO JOIN AS A CREATOR</span>
+                <Sparkles className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </section>

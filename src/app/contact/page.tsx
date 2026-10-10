@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { initialContactData } from "@/modules/contact/data/contact.data";
 import { ContactDetailsData } from "@/modules/contact/types/contact.types";
+import { addInquiry } from "@/app/admin/inquiries-shared";
 import { Phone, Mail, MapPin, Send, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {
@@ -45,7 +46,7 @@ export default function ContactPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          company: formData.phone,
+          phone: formData.phone,
           serviceRequested: formData.serviceCategory,
           budgetRange: formData.budget,
           message: formData.message,
@@ -56,6 +57,21 @@ export default function ContactPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to submit project inquiry.");
       }
+
+      // Sync into shared inquiries storage for admin dashboard
+      try {
+        addInquiry({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || "Not provided",
+          service: formData.serviceCategory,
+          budget: formData.budget,
+          message: formData.message,
+          location: "Assam / Online",
+          status: "NEW",
+          date: "Just now",
+        });
+      } catch {}
 
       setSubmitted(true);
     } catch (err: unknown) {

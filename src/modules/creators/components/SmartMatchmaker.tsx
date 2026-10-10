@@ -40,7 +40,7 @@ export function SmartMatchmaker({
 }: SmartMatchmakerProps) {
   const [goal, setGoal] = useState<string>("Viral Brand Growth");
   const [format, setFormat] = useState<string>("Short-Form Reels");
-  const [budget, setBudget] = useState<string>("$3k - $8k Campaign");
+  const [budget, setBudget] = useState<string>("₹25k - ₹75k Campaign");
 
   // Derive top 3 creator matches based on selections using the admin-customizable matching logic
   const matchedCreators = React.useMemo(() => {
@@ -156,7 +156,7 @@ export function SmartMatchmaker({
               onClick={() => {
                 setGoal("Viral Brand Growth");
                 setFormat("Short-Form Reels");
-                setBudget("$3k - $8k Campaign");
+                setBudget("₹25k - ₹75k Campaign");
               }}
               className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer border border-neutral-200 shadow-2xs"
             >

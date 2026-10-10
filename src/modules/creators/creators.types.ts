@@ -18,6 +18,23 @@ export type DeliverableFormat =
 
 export type ReachTier = "All" | "Rising (25K-100K)" | "Prime (100K-500K)" | "Macro (500K-1.5M)" | "Icon (1.5M+)";
 
+export const CREATOR_CATEGORIES: CreatorCategory[] = [
+  "High Fashion & Luxury",
+  "Tech & Gadgets",
+  "Viral UGC & Short-Form",
+  "3D & CGI Motion",
+  "Architecture & Spaces",
+  "Lifestyle & Travel",
+  "Fitness & Performance",
+];
+
+export const CREATOR_REACH_TIERS: ReachTier[] = [
+  "Rising (25K-100K)",
+  "Prime (100K-500K)",
+  "Macro (500K-1.5M)",
+  "Icon (1.5M+)",
+];
+
 export interface CreatorDemographics {
   topLocations: { name: string; percentage: number }[];
   ageGroup: string; // e.g. "74% 18–34"
@@ -54,7 +71,7 @@ export interface Creator {
   engagementRate: number; // e.g. 5.8%
   followersCount: string; // e.g. "840K"
   avgViews: string; // e.g. "420K"
-  startingRate: string; // e.g. "$1,200"
+  startingRate: string; // e.g. "₹15,000"
   turnaroundDays: number; // e.g. 2
   bio: string;
   pastBrands: string[];
