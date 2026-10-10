@@ -49,10 +49,11 @@ html {
   scrollbar-width: none;
 }
 
-/* Touch snap utilities for mobile app carousels */
+/* Touch snap utilities for mobile app carousels with fluid vertical scroll passthrough */
 .snap-x-mandatory {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .snap-start {
   scroll-snap-align: start;
@@ -61,15 +62,21 @@ html {
   scroll-snap-align: center;
 }
 
-/* Crisp rendering during CSS transform/translate transitions */
+/* Crisp rendering during CSS transform/translate transitions without layer thrashing */
 .crisp-transform {
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   -webkit-font-smoothing: subpixel-antialiased;
-  will-change: transform, box-shadow, border-color;
 }
+.crisp-transform:hover {
+  will-change: transform;
+}
+
+/* Ensure horizontal scroll tracks let vertical scroll pass instantly */
+[class*="overflow-x-auto"] {
+  touch-action: pan-y pinch-zoom;
+}
+
 
 /* Seamless Continuous Marquee Animation (Always in Motion) */
 @keyframes marquee {

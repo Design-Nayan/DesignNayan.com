@@ -195,7 +195,7 @@ export function HotelsCatalogView() {
             <div
               key={stay.id}
               onClick={() => setSelectedProperty(stay)}
-              className="rounded-3xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group active:scale-[0.99] cursor-pointer"
+              className="rounded-3xl bg-white border border-neutral-200/90 overflow-hidden shadow-lg hover:shadow-2xl transition-[box-shadow,border-color,transform] duration-200 ease-out flex flex-col justify-between group active:scale-[0.99] cursor-pointer"
             >
               <div className="relative aspect-[16/11] overflow-hidden bg-neutral-100">
                 <img
