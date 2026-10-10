@@ -182,22 +182,36 @@ export function PortfolioView() {
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [viewMode, setViewMode] = useState<"motion" | "grid">("motion");
 
+  const [projectsList, setProjectsList] = useState<ProjectItem[]>(projectsData);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_projects");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProjectsList(parsed);
+        }
+      } catch {}
+    }
+  }, []);
+
   // Dynamically derive stats directly from uploaded portfolio projects
   const metricTargets = useMemo(() => {
-    const total = projectsData.length;
+    const total = projectsList.length;
 
     // Design & Web (Digital Web Development, E-Commerce, 3D CGI Rendering, Brand Identity, Marketing)
-    const designAndWeb = projectsData.filter((p) =>
+    const designAndWeb = projectsList.filter((p) =>
       /BRANDING|DEVELOPMENT|RENDERING|MARKETING|DESIGN/i.test(p.categoryTag)
     ).length;
 
     // Build & Spatial (Architecture, Civil Construction, Commercial, Interior, Floor Planning)
-    const buildAndSpatial = projectsData.filter((p) =>
+    const buildAndSpatial = projectsList.filter((p) =>
       /ARCHITECTURE|INTERIOR|COMMERCIAL|CONSTRUCTION|FLOOR/i.test(p.categoryTag)
     ).length;
 
     return { total, designAndWeb, buildAndSpatial };
-  }, []);
+  }, [projectsList]);
   const metrics = useAnimatedMetrics(metricTargets, 1200);
 
   // Dynamic discipline balance percentages computed directly from the live portfolio data
@@ -210,11 +224,11 @@ export function PortfolioView() {
   // Dynamic fuzzy search without requiring exact keywords
   const filteredProjects = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return projectsData;
+    if (!q) return projectsList;
 
     const tokens = q.split(/\s+/).filter(Boolean);
 
-    return projectsData.filter((project) => {
+    return projectsList.filter((project) => {
       const searchableContent = [
         project.title,
         project.location,
@@ -228,7 +242,7 @@ export function PortfolioView() {
 
       return tokens.every((token) => matchesFuzzyToken(searchableContent, token));
     });
-  }, [searchQuery]);
+  }, [searchQuery, projectsList]);
 
   return (
     <div className="min-h-screen bg-[#fafaf9] text-neutral-900 pb-24 font-sans select-none selection:bg-neutral-900 selection:text-white">

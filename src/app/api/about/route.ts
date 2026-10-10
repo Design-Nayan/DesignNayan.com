@@ -32,7 +32,15 @@ export async function GET() {
   }
 }
 
+export async function POST(req: NextRequest) {
+  return handleAboutUpdate(req);
+}
+
 export async function PUT(req: NextRequest) {
+  return handleAboutUpdate(req);
+}
+
+async function handleAboutUpdate(req: NextRequest) {
   try {
     const admin = await getCurrentAdmin();
     if (!admin) {

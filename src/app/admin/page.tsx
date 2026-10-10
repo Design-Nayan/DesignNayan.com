@@ -623,6 +623,16 @@ export default function AdminDashboardPage() {
         }
       } catch {}
     }
+    const savedProjects = localStorage.getItem("dn_projects");
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProjects(parsed);
+        }
+      } catch {}
+    }
+
     const savedCreators = localStorage.getItem("dn_creators");
     if (savedCreators) {
       try {
@@ -912,6 +922,14 @@ export default function AdminDashboardPage() {
     setContactData(data);
     try {
       localStorage.setItem("dn_contact_details", JSON.stringify(data));
+    } catch {}
+  };
+
+  // Save Projects changes to LocalStorage
+  const updateProjectsWithStorage = (newList: ProjectItem[]) => {
+    setProjects(newList);
+    try {
+      localStorage.setItem("dn_projects", JSON.stringify(newList));
     } catch {}
   };
 
@@ -1601,7 +1619,8 @@ export default function AdminDashboardPage() {
   // Delete Portfolio Project
   const handleDeleteProject = (id: string) => {
     if (confirm("Delete this portfolio project?")) {
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      const updated = projects.filter((p) => p.id !== id);
+      updateProjectsWithStorage(updated);
       showToast("Portfolio project deleted");
       if (viewingProjectDetail?.id === id) {
         setViewingProjectDetail(null);
@@ -1715,13 +1734,15 @@ export default function AdminDashboardPage() {
     };
 
     if (editingProject) {
-      setProjects((prev) => prev.map((p) => (p.id === editingProject.id ? projectData : p)));
+      const updated = projects.map((p) => (p.id === editingProject.id ? projectData : p));
+      updateProjectsWithStorage(updated);
       showToast("Portfolio project updated");
       if (viewingProjectDetail?.id === editingProject.id) {
         setViewingProjectDetail(projectData);
       }
     } else {
-      setProjects((prev) => [projectData, ...prev]);
+      const updated = [projectData, ...projects];
+      updateProjectsWithStorage(updated);
       showToast("Portfolio project added");
     }
 

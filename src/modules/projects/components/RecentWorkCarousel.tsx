@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { projectsData } from "../data/projects.data";
@@ -10,14 +10,27 @@ import { cn } from "@/lib/utils";
 
 export function RecentWorkCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [projectsList, setProjectsList] = useState<ProjectItem[]>(projectsData);
   const [activeIndex, setActiveIndex] = useState(0);
   const [activeModalProject, setActiveModalProject] = useState<ProjectItem | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dn_projects");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setProjectsList(parsed);
+        }
+      } catch {}
+    }
+  }, []);
 
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
       const index = Math.round(scrollLeft / (clientWidth * 0.65));
-      setActiveIndex(Math.min(index, projectsData.length));
+      setActiveIndex(Math.min(index, projectsList.length));
     }
   };
 
@@ -83,7 +96,7 @@ export function RecentWorkCarousel() {
           onScroll={handleScroll}
           className="flex 2xl:grid 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
         >
-          {projectsData.map((project) => (
+          {projectsList.map((project) => (
             <div
               key={project.id}
               onClick={() => setActiveModalProject(project)}
