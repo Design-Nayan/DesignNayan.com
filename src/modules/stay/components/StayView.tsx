@@ -55,6 +55,15 @@ export function StayView() {
     } catch {}
   }, []);
 
+  // Ensure horizontal containers always start at the first card on load or updates
+  React.useEffect(() => {
+    if (rentalsScrollRef.current) rentalsScrollRef.current.scrollLeft = 0;
+  }, [rentalsList]);
+
+  React.useEffect(() => {
+    if (staysScrollRef.current) staysScrollRef.current.scrollLeft = 0;
+  }, [hotelsList]);
+
   // Close modal on Escape key and prevent background scroll while open
   React.useEffect(() => {
     if (!selectedRental && !selectedStay) return;
@@ -345,7 +354,7 @@ export function StayView() {
 
         <div
           ref={rentalsScrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4"
         >
           {topRentals.map((rental) => (
             <div
@@ -474,7 +483,7 @@ export function StayView() {
 
         <div
           ref={staysScrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 pb-4"
         >
           {topStays.map((stay) => (
             <div

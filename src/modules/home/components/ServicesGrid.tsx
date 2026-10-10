@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -28,23 +28,184 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import { allServices, serviceCategories } from "../data/home.data";
+import { allServices, serviceCategories, ServiceItem } from "../data/home.data";
+import { StudioServiceDetail } from "@/modules/studio/types/studio.types";
+import { BuildServiceDetail } from "@/modules/build/types/build.types";
 import { cn } from "@/lib/utils";
 
 interface ServicesGridProps {
   isFullPage?: boolean;
 }
 
+const computeActiveServices = (
+  savedStudio?: StudioServiceDetail[] | null,
+  savedBuild?: BuildServiceDetail[] | null
+): ServiceItem[] => {
+  const hasStudio = Array.isArray(savedStudio) && savedStudio.length > 0;
+  const hasBuild = Array.isArray(savedBuild) && savedBuild.length > 0;
+
+  if (!hasStudio && !hasBuild) {
+    return allServices;
+  }
+
+  // Lookups for saved services from Admin
+  const studioMap = new Map<string, StudioServiceDetail>();
+  if (hasStudio) {
+    savedStudio.forEach((s) => studioMap.set(s.id, s));
+  }
+
+  const buildMap = new Map<string, BuildServiceDetail>();
+  if (hasBuild) {
+    savedBuild.forEach((b) => buildMap.set(b.id, b));
+  }
+
+  const result: ServiceItem[] = [];
+  const seenIds = new Set<string>();
+
+  // 1. Maintain the balanced curated layout from allServices, updating any edited items
+  for (const base of allServices) {
+    if (base.destinationHub === "STUDIO") {
+      if (hasStudio) {
+        const updated = studioMap.get(base.id);
+        if (updated) {
+          result.push({
+            id: updated.id,
+            title: updated.title,
+            description: updated.description,
+            category: updated.category,
+            iconName: updated.iconName || base.iconName,
+            link: `/studio?service=${updated.id}`,
+            destinationHub: "STUDIO",
+          });
+          seenIds.add(updated.id);
+        }
+      } else {
+        result.push(base);
+        seenIds.add(base.id);
+      }
+    } else if (base.destinationHub === "BUILD") {
+      if (hasBuild) {
+        const updated = buildMap.get(base.id);
+        if (updated) {
+          result.push({
+            id: updated.id,
+            title: updated.title,
+            description: updated.description,
+            category: "BUILD & CONSTRUCTION",
+            iconName: updated.iconName || base.iconName,
+            link: `/build?service=${updated.id}`,
+            destinationHub: "BUILD",
+          });
+          seenIds.add(updated.id);
+        }
+      } else {
+        result.push(base);
+        seenIds.add(base.id);
+      }
+    } else {
+      // CREATORS or other hubs
+      result.push(base);
+      seenIds.add(base.id);
+    }
+  }
+
+  // 2. Append any newly added Studio services created in Admin (ignoring IDs already seen)
+  if (hasStudio) {
+    for (const s of savedStudio) {
+      if (!seenIds.has(s.id)) {
+        result.push({
+          id: s.id,
+          title: s.title,
+          description: s.description,
+          category: s.category,
+          iconName: s.iconName || "Sparkles",
+          link: `/studio?service=${s.id}`,
+          destinationHub: "STUDIO",
+        });
+        seenIds.add(s.id);
+      }
+    }
+  }
+
+  // 3. Append any newly added Build services created in Admin (ignoring IDs already seen)
+  if (hasBuild) {
+    for (const b of savedBuild) {
+      if (!seenIds.has(b.id)) {
+        result.push({
+          id: b.id,
+          title: b.title,
+          description: b.description,
+          category: "BUILD & CONSTRUCTION",
+          iconName: b.iconName || "HardHat",
+          link: `/build?service=${b.id}`,
+          destinationHub: "BUILD",
+        });
+        seenIds.add(b.id);
+      }
+    }
+  }
+
+  return result;
+};
+
 export function ServicesGrid({ isFullPage = false }: ServicesGridProps) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [servicesList, setServicesList] = useState<ServiceItem[]>(allServices);
+
+  useEffect(() => {
+    const loadFromLocalStorage = () => {
+      let studio: StudioServiceDetail[] | null = null;
+      let build: BuildServiceDetail[] | null = null;
+      try {
+        const rawStudio = localStorage.getItem("dn_studio_services");
+        if (rawStudio) studio = JSON.parse(rawStudio);
+      } catch {}
+      try {
+        const rawBuild = localStorage.getItem("dn_build_services");
+        if (rawBuild) build = JSON.parse(rawBuild);
+      } catch {}
+      if (studio || build) {
+        setServicesList(computeActiveServices(studio, build));
+      }
+    };
+
+    loadFromLocalStorage();
+
+    // Live Database Sync: fetch updated services from PostgreSQL
+    fetch("/api/services", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success) {
+          const studio = Array.isArray(data.studio) && data.studio.length > 0 ? data.studio : null;
+          const build = Array.isArray(data.build) && data.build.length > 0 ? data.build : null;
+          if (studio || build) {
+            setServicesList(computeActiveServices(studio, build));
+            if (studio) {
+              try {
+                localStorage.setItem("dn_studio_services", JSON.stringify(studio));
+              } catch {}
+            }
+            if (build) {
+              try {
+                localStorage.setItem("dn_build_services", JSON.stringify(build));
+              } catch {}
+            }
+          }
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch live services:", err));
+
+    window.addEventListener("storage", loadFromLocalStorage);
+    return () => window.removeEventListener("storage", loadFromLocalStorage);
+  }, []);
 
   const isAll = selectedCategory === "ALL";
 
   const filteredServices = isAll
-    ? allServices
-    : allServices.filter((s) => s.category === selectedCategory);
+    ? servicesList
+    : servicesList.filter((s) => s.category === selectedCategory);
 
   const getServiceIcon = (iconName: string, destinationHub?: string) => {
     const isBuild = destinationHub === "BUILD";
@@ -163,7 +324,7 @@ export function ServicesGrid({ isFullPage = false }: ServicesGridProps) {
 
             return (
               <Link
-                key={service.id}
+                key={`${service.destinationHub}-${service.id}-${idx}`}
                 href={service.link}
                 onClick={(e) => {
                   if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {

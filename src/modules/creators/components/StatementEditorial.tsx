@@ -19,7 +19,32 @@ interface StatementEditorialProps {
 
 export function StatementEditorial({ creators, onSelectCreator }: StatementEditorialProps) {
   const containerRef = useRef<HTMLElement>(null);
-  const topSpotlightCreators = React.useMemo(() => getTopCreators(creators), [creators]);
+  const [topSpotlightCreators, setTopSpotlightCreators] = React.useState<Creator[]>(() =>
+    getTopCreators(creators)
+  );
+
+  React.useEffect(() => {
+    const resolveTop = () => {
+      try {
+        const stored = localStorage.getItem("dn_top_creators");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const ids = parsed
+              .map((item: any) => (typeof item === "string" ? item : item?.creatorId))
+              .filter(Boolean);
+            setTopSpotlightCreators(getTopCreators(creators, ids));
+            return;
+          }
+        }
+      } catch {}
+      setTopSpotlightCreators(getTopCreators(creators));
+    };
+
+    resolveTop();
+    window.addEventListener("storage", resolveTop);
+    return () => window.removeEventListener("storage", resolveTop);
+  }, [creators]);
 
   useGSAP(
     () => {

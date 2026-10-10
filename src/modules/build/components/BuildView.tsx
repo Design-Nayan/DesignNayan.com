@@ -39,26 +39,53 @@ export function BuildView() {
   const [materials, setMaterials] = useState<MaterialCategory[]>(materialCategoriesData);
 
   useEffect(() => {
-    const saved = localStorage.getItem("dn_build_services");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setServices(parsed);
-        }
-      } catch {}
-    }
+    const loadSaved = () => {
+      const saved = localStorage.getItem("dn_build_services");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setServices(parsed);
+          }
+        } catch {}
+      }
 
-    const savedMaterials = localStorage.getItem("dn_build_materials");
-    if (savedMaterials) {
-      try {
-        const parsedMaterials = JSON.parse(savedMaterials);
-        if (Array.isArray(parsedMaterials) && parsedMaterials.length > 0) {
-          setMaterials(parsedMaterials);
+      const savedMaterials = localStorage.getItem("dn_build_materials");
+      if (savedMaterials) {
+        try {
+          const parsedMaterials = JSON.parse(savedMaterials);
+          if (Array.isArray(parsedMaterials) && parsedMaterials.length > 0) {
+            setMaterials(parsedMaterials);
+          }
+        } catch {}
+      }
+    };
+
+    loadSaved();
+
+    // Fetch live from database
+    fetch("/api/services", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.build) && data.build.length > 0) {
+          setServices(data.build);
+          try {
+            localStorage.setItem("dn_build_services", JSON.stringify(data.build));
+          } catch {}
         }
-      } catch {}
-    }
+      })
+      .catch((err) => console.warn("Failed to fetch live build services:", err));
+
+    window.addEventListener("storage", loadSaved);
+    return () => window.removeEventListener("storage", loadSaved);
   }, []);
+
+  // Ensure horizontal track always starts at the first card on load or when services update
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+    }
+  }, [services]);
 
   // ==========================================
   // 1. ROTATING TYPING ANIMATION FOR BUILD HERO
@@ -327,7 +354,7 @@ export function BuildView() {
             {/* Horizontal Scroll Track: Sleek & Compact Construction Cards */}
             <div
               ref={scrollRef}
-              className="flex gap-3 sm:gap-4 lg:gap-4.5 overflow-x-auto no-scrollbar snap-x snap-mandatory overscroll-x-contain -mx-3.5 px-3.5 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0 py-1.5 sm:py-2 scroll-pl-3.5 sm:scroll-pl-6"
+              className="flex gap-3 sm:gap-4 lg:gap-4.5 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-3.5 px-3.5 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0 py-1.5 sm:py-2"
             >
               {filteredServices.map((service) => (
                 <div

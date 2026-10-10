@@ -30,7 +30,7 @@ export function RecentWorkCarousel() {
     loadData();
 
     // Fetch live from database so homepage work carousel reflects owner's updates
-    fetch("/api/projects/")
+    fetch("/api/projects")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
@@ -45,6 +45,14 @@ export function RecentWorkCarousel() {
     window.addEventListener("storage", loadData);
     return () => window.removeEventListener("storage", loadData);
   }, []);
+
+  // Ensure carousel always starts at the first card on load or when new projects are added
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+      setActiveIndex(0);
+    }
+  }, [projectsList]);
 
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -81,18 +89,18 @@ export function RecentWorkCarousel() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Desktop Only Navigation Arrows */}
-            <div className="hidden 2xl:flex items-center gap-1.5">
+            {/* Navigation Arrows: available on tablet & desktop */}
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => scroll("left")}
-                className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
                 aria-label="Previous project"
               >
                 <ChevronLeft className="w-4 h-4 text-rose-600" />
               </button>
               <button
                 onClick={() => scroll("right")}
-                className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
                 aria-label="Next project"
               >
                 <ChevronRight className="w-4 h-4 text-rose-600" />
@@ -114,13 +122,13 @@ export function RecentWorkCarousel() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex 2xl:grid 2xl:grid-cols-5 gap-3.5 sm:gap-5 lg:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-5 lg:gap-6 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 pb-3 sm:pb-4"
         >
           {projectsList.map((project) => (
             <div
               key={project.id}
               onClick={() => setActiveModalProject(project)}
-              className="shrink-0 w-[220px] sm:w-[280px] 2xl:w-auto snap-start rounded-xl sm:rounded-2xl bg-white border border-neutral-200/90 overflow-hidden hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between group active:scale-[0.98] shadow-sm cursor-pointer"
+              className="shrink-0 w-[240px] sm:w-[290px] md:w-[320px] lg:w-[350px] snap-start rounded-xl sm:rounded-2xl bg-white border border-neutral-200/90 overflow-hidden hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between group active:scale-[0.98] shadow-sm cursor-pointer"
             >
               {/* Project Image with Category Badge */}
               <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
@@ -166,7 +174,7 @@ export function RecentWorkCarousel() {
           {/* End-of-Scroll "View More" Card */}
           <Link
             href="/portfolio"
-            className="shrink-0 w-[180px] sm:w-[240px] 2xl:hidden snap-start rounded-xl sm:rounded-2xl bg-neutral-950 text-white p-5 flex flex-col items-center justify-center text-center group hover:bg-neutral-900 transition-all duration-300 shadow-md active:scale-[0.98]"
+            className="shrink-0 w-[190px] sm:w-[240px] snap-start rounded-xl sm:rounded-2xl bg-neutral-950 text-white p-5 flex flex-col items-center justify-center text-center group hover:bg-neutral-900 transition-all duration-300 shadow-md active:scale-[0.98]"
           >
             <div className="w-10 h-10 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-rose-600 group-hover:border-rose-500 transition-all">
               <Sparkles className="w-4 h-4 text-rose-400 group-hover:text-white transition-colors" />
@@ -184,9 +192,9 @@ export function RecentWorkCarousel() {
           </Link>
         </div>
 
-        {/* Mobile & Tablet Swipe Indicator Dots */}
-        <div className="flex 2xl:hidden items-center justify-center gap-1.5 pt-3 sm:pt-4">
-          {[...projectsData, { id: "view-more" }].map((_, idx) => (
+        {/* Mobile Swipe Indicator Dots */}
+        <div className="flex md:hidden items-center justify-center gap-1.5 pt-3 sm:pt-4">
+          {[...projectsList, { id: "view-more" }].map((_, idx) => (
             <button
               key={idx}
               onClick={() => {

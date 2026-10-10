@@ -1,20 +1,61 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { Star, ChevronLeft, ChevronRight, MessageSquareQuote, ArrowRight } from "lucide-react";
 import { testimonialsData } from "../data/testimonials.data";
+import { TestimonialItem } from "../types/testimonials.types";
 import { cn } from "@/lib/utils";
 
 export function TestimonialsSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(testimonialsData);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem("dn_testimonials");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTestimonialsList(parsed);
+          }
+        }
+      } catch {}
+    };
+
+    loadFromStorage();
+
+    fetch("/api/testimonials", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
+          setTestimonialsList(json.data);
+          try {
+            localStorage.setItem("dn_testimonials", JSON.stringify(json.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch live testimonials:", err));
+
+    window.addEventListener("storage", loadFromStorage);
+    return () => window.removeEventListener("storage", loadFromStorage);
+  }, []);
+
+  // Ensure carousel always starts at the first card on load or updates
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+      setActiveIndex(0);
+    }
+  }, [testimonialsList]);
 
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
       const index = Math.round(scrollLeft / (clientWidth * 0.75));
-      setActiveIndex(Math.min(index, testimonialsData.length));
+      setActiveIndex(Math.min(index, testimonialsList.length));
     }
   };
 
@@ -28,6 +69,8 @@ export function TestimonialsSection() {
       });
     }
   };
+
+  const displayedTestimonials = testimonialsList.slice(0, 5);
 
   return (
     <section className="py-14 sm:py-20 lg:py-24 px-4 sm:px-6 bg-neutral-50/50">
@@ -44,22 +87,33 @@ export function TestimonialsSection() {
             </h2>
           </div>
 
-          {/* Desktop Only Navigation Arrows */}
-          <div className="hidden 2xl:flex items-center gap-1.5">
-            <button
-              onClick={() => scroll("left")}
-              className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
-              aria-label="Previous testimonial"
+          <div className="flex items-center gap-3">
+            {/* Navigation Arrows: available on tablet & desktop */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => scroll("left")}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft className="w-4 h-4 text-rose-600" />
+              </button>
+              <button
+                onClick={() => scroll("right")}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight className="w-4 h-4 text-rose-600" />
+              </button>
+            </div>
+
+            {/* Desktop View All Link */}
+            <Link
+              href="/testimonials"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-600 hover:text-rose-700 transition-colors"
             >
-              <ChevronLeft className="w-4 h-4 text-rose-600" />
-            </button>
-            <button
-              onClick={() => scroll("right")}
-              className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-900 bg-white flex items-center justify-center text-neutral-700 hover:text-neutral-950 transition-colors active:scale-95 shadow-sm cursor-pointer"
-              aria-label="Next testimonial"
-            >
-              <ChevronRight className="w-4 h-4 text-rose-600" />
-            </button>
+              <span>View All Reviews</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
 
@@ -67,12 +121,12 @@ export function TestimonialsSection() {
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex 2xl:grid 2xl:grid-cols-3 gap-3.5 sm:gap-6 overflow-x-auto no-scrollbar snap-x-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 2xl:mx-0 2xl:px-0 pb-3 2xl:pb-0 scroll-pl-4 sm:scroll-pl-6"
+          className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 pb-3 sm:pb-4"
         >
-          {testimonialsData.slice(0, 5).map((testimonial) => (
+          {displayedTestimonials.map((testimonial) => (
             <div
               key={testimonial.id}
-              className="shrink-0 w-[240px] sm:w-[320px] 2xl:w-auto snap-start rounded-xl sm:rounded-2xl bg-white border border-neutral-200/90 p-4 sm:p-6 lg:p-7 shadow-sm hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between"
+              className="shrink-0 w-[260px] sm:w-[320px] md:w-[350px] lg:w-[380px] snap-start rounded-xl sm:rounded-2xl bg-white border border-neutral-200/90 p-4 sm:p-6 lg:p-7 shadow-sm hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between"
             >
               {/* Star Rating */}
               <div className="flex items-center gap-1 text-rose-600 mb-3 sm:mb-4">
@@ -108,7 +162,7 @@ export function TestimonialsSection() {
           {/* End-of-Scroll "View More" Card: Routes to /testimonials */}
           <Link
             href="/testimonials"
-            className="shrink-0 w-[180px] sm:w-[240px] 2xl:hidden snap-start rounded-xl sm:rounded-2xl bg-neutral-950 text-white p-5 flex flex-col items-center justify-center text-center group hover:bg-neutral-900 transition-all duration-300 shadow-md active:scale-[0.98]"
+            className="shrink-0 w-[200px] sm:w-[260px] snap-start rounded-xl sm:rounded-2xl bg-neutral-950 text-white p-5 sm:p-6 flex flex-col items-center justify-center text-center group hover:bg-neutral-900 transition-all duration-300 shadow-md active:scale-[0.98]"
           >
             <div className="w-10 h-10 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-rose-600 group-hover:border-rose-500 transition-all">
               <MessageSquareQuote className="w-4 h-4 text-rose-400 group-hover:text-white transition-colors" />
@@ -126,9 +180,9 @@ export function TestimonialsSection() {
           </Link>
         </div>
 
-        {/* Mobile & Tablet Swipe Indicator Dots */}
-        <div className="flex 2xl:hidden items-center justify-center gap-1.5 pt-3 sm:pt-4">
-          {[...testimonialsData.slice(0, 5), { id: "view-more" }].map((_, idx) => (
+        {/* Mobile Swipe Indicator Dots */}
+        <div className="flex md:hidden items-center justify-center gap-1.5 pt-3 sm:pt-4">
+          {[...displayedTestimonials, { id: "view-more" }].map((_, idx) => (
             <button
               key={idx}
               onClick={() => {

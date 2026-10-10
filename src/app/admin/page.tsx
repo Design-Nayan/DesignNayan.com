@@ -66,6 +66,9 @@ import {
   Smartphone,
   Sliders,
   Loader2,
+  MessageSquareQuote,
+  Quote,
+  Award,
 } from "lucide-react";
 
 import { projectsData as initialProjects } from "@/modules/projects/data/projects.data";
@@ -92,6 +95,10 @@ import {
   materialCategoriesData as initialMaterials,
 } from "@/modules/build/data/build.data";
 import { BuildServiceDetail, MaterialCategory } from "@/modules/build/types/build.types";
+import { testimonialsData as initialTestimonials } from "@/modules/testimonials/data/testimonials.data";
+import { TestimonialItem } from "@/modules/testimonials/types/testimonials.types";
+import { partnerBrandsData as initialPartnerBrands } from "@/modules/brands/data/brands.data";
+import { PartnerBrand } from "@/modules/brands/types/brands.types";
 import { initialAboutData } from "@/modules/about/data/about.data";
 import { AboutPageData } from "@/modules/about/types/about.types";
 import { initialContactData } from "@/modules/contact/data/contact.data";
@@ -191,7 +198,7 @@ export const INCOME_CATEGORIES = [
   "Other Services",
 ];
 
-type TabType = "overview" | "portfolio" | "income" | "studio" | "build" | "creators" | "stays" | "about" | "contact" | "inquiries" | "settings";
+type TabType = "overview" | "portfolio" | "income" | "studio" | "build" | "creators" | "stays" | "testimonials" | "about" | "contact" | "inquiries" | "settings";
 type TimeFilterType = "this_month" | "3_months" | "6_months" | "this_year" | "all_time";
 export const STUDIO_CATEGORY_CONFIGS = {
   "DESIGN & ARCHITECTURE": {
@@ -386,6 +393,13 @@ export default function AdminDashboardPage() {
   // Core Data States
   const [projects, setProjects] = useState<ProjectItem[]>(initialProjects);
   const [creators, setCreators] = useState<Creator[]>(initialCreators);
+  const [topCreatorIds, setTopCreatorIds] = useState<string[]>([
+    "kai-vance",
+    "maya-solis",
+    "damon-cross",
+    "elena-rostova",
+    "zayn-malik-k",
+  ]);
   const [creatorModalOpen, setCreatorModalOpen] = useState(false);
   const [editingCreator, setEditingCreator] = useState<Creator | null>(null);
   const [viewingCreator, setViewingCreator] = useState<Creator | null>(null);
@@ -463,6 +477,33 @@ export default function AdminDashboardPage() {
 
   // Contact Details State
   const [contactData, setContactData] = useState<ContactDetailsData>(initialContactData);
+
+  // Testimonials & Brands States
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>(initialTestimonials);
+  const [testimonialModalOpen, setTestimonialModalOpen] = useState(false);
+  const [editingTestimonial, setEditingTestimonial] = useState<TestimonialItem | null>(null);
+  const [testimonialSearchQuery, setTestimonialSearchQuery] = useState("");
+  const [testimonialRating, setTestimonialRating] = useState<number>(5);
+  const [testimonialAvatar, setTestimonialAvatar] = useState<string>("");
+
+  const [partnerBrands, setPartnerBrands] = useState<PartnerBrand[]>(initialPartnerBrands);
+  const [brandModalOpen, setBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<PartnerBrand | null>(null);
+  const [brandSearchQuery, setBrandSearchQuery] = useState("");
+  const [testimonialsActiveSubTab, setTestimonialsActiveSubTab] = useState<"reviews" | "brands">("reviews");
+
+  // Synchronize Testimonial modal fields when opening or editing
+  useEffect(() => {
+    if (testimonialModalOpen) {
+      if (editingTestimonial) {
+        setTestimonialRating(editingTestimonial.rating || 5);
+        setTestimonialAvatar(editingTestimonial.avatar || "");
+      } else {
+        setTestimonialRating(5);
+        setTestimonialAvatar("");
+      }
+    }
+  }, [testimonialModalOpen, editingTestimonial]);
 
   // Studio & Design Services States
   const [studioServices, setStudioServices] = useState<StudioServiceDetail[]>(initialStudioServices);
@@ -699,6 +740,16 @@ export default function AdminDashboardPage() {
       } catch {}
     }
 
+    const savedTop = localStorage.getItem("dn_top_creators");
+    if (savedTop) {
+      try {
+        const parsed = JSON.parse(savedTop);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTopCreatorIds(parsed.map((item: any) => typeof item === "string" ? item : item?.creatorId).filter(Boolean).slice(0, 5));
+        }
+      } catch {}
+    }
+
     const savedRentals = localStorage.getItem("dn_stay_rentals");
     if (savedRentals) {
       try {
@@ -735,6 +786,26 @@ export default function AdminDashboardPage() {
         const parsed = JSON.parse(savedContact);
         if (parsed && typeof parsed === "object") {
           setContactData(parsed);
+        }
+      } catch {}
+    }
+
+    const savedTestimonials = localStorage.getItem("dn_testimonials");
+    if (savedTestimonials) {
+      try {
+        const parsed = JSON.parse(savedTestimonials);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTestimonials(parsed);
+        }
+      } catch {}
+    }
+
+    const savedBrands = localStorage.getItem("dn_partner_brands");
+    if (savedBrands) {
+      try {
+        const parsed = JSON.parse(savedBrands);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPartnerBrands(parsed);
         }
       } catch {}
     }
@@ -797,8 +868,12 @@ export default function AdminDashboardPage() {
     }
 
     // Live Database Sync: Inquiries from PostgreSQL
-    fetch("/api/inquiries/")
-      .then((res) => res.json())
+    fetch("/api/inquiries", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success && Array.isArray(data.inquiries) && data.inquiries.length > 0) {
           const dbInquiries = data.inquiries.map((dbInq: any) => ({
@@ -821,11 +896,15 @@ export default function AdminDashboardPage() {
           setInquiries(dbInquiries);
         }
       })
-      .catch((err) => console.error("Error loading inquiries from DB:", err));
+      .catch((err) => console.warn("Notice: Inquiries falling back to local cache:", err));
 
     // Live Database Sync: Finance Records and Immutable Audit Logs from PostgreSQL
-    fetch("/api/finances/")
-      .then((res) => res.json())
+    fetch("/api/finances", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success) {
           if (Array.isArray(data.records)) {
@@ -842,11 +921,15 @@ export default function AdminDashboardPage() {
           }
         }
       })
-      .catch((err) => console.error("Error loading finances from DB:", err));
+      .catch((err) => console.warn("Notice: Finances falling back to local cache:", err));
 
     // Live Database Sync: About Data from PostgreSQL
-    fetch("/api/about", { credentials: "include", cache: "no-store" })
-      .then((res) => res.json())
+    fetch("/api/about", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success && data.data) {
           const merged = {
@@ -868,11 +951,15 @@ export default function AdminDashboardPage() {
           } catch {}
         }
       })
-      .catch((err) => console.error("Error loading about data from DB:", err));
+      .catch((err) => console.warn("Notice: About data falling back to local cache:", err));
 
     // Live Database Sync: Portfolio Projects from PostgreSQL
-    fetch("/api/projects/", { credentials: "include" })
-      .then((res) => res.json())
+    fetch("/api/projects", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
           setProjects(data.data);
@@ -881,7 +968,83 @@ export default function AdminDashboardPage() {
           } catch {}
         }
       })
-      .catch((err) => console.error("Error loading projects from DB:", err));
+      .catch((err) => console.warn("Notice: Projects falling back to local cache:", err));
+
+    // Live Database Sync: Studio & Build Services from PostgreSQL
+    fetch("/api/services", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success) {
+          if (Array.isArray(data.studio) && data.studio.length > 0) {
+            setStudioServices(data.studio);
+            try {
+              localStorage.setItem("dn_studio_services", JSON.stringify(data.studio));
+            } catch {}
+          }
+          if (Array.isArray(data.build) && data.build.length > 0) {
+            setBuildServices(data.build);
+            try {
+              localStorage.setItem("dn_build_services", JSON.stringify(data.build));
+            } catch {}
+          }
+        }
+      })
+      .catch((err) => console.warn("Notice: Services falling back to local cache:", err));
+
+    // Live Database Sync: Testimonials from PostgreSQL
+    fetch("/api/testimonials", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+          setTestimonials(data.data);
+          try {
+            localStorage.setItem("dn_testimonials", JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Notice: Testimonials falling back to local cache:", err));
+
+    // Live Database Sync: Partner Brands from PostgreSQL
+    fetch("/api/brands", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+          setPartnerBrands(data.data);
+          try {
+            localStorage.setItem("dn_partner_brands", JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Notice: Partner brands falling back to local cache:", err));
+
+    // Live Database Sync: Contact Information from PostgreSQL
+    fetch("/api/contact-info", {
+      headers: { "x-admin-auth": "true" },
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data?.data) {
+          setContactData(data.data);
+          try {
+            localStorage.setItem("dn_contact_details", JSON.stringify(data.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Notice: Contact info falling back to local cache:", err));
   }, []);
 
   // Native Web Audio API Luxury Chime (Zero audio files or external CDNs needed)
@@ -1026,12 +1189,30 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Save Contact details changes to LocalStorage
-  const updateContactDataWithStorage = (data: ContactDetailsData) => {
+  // Save Contact details changes to LocalStorage and PostgreSQL database
+  const updateContactDataWithStorage = async (data: ContactDetailsData) => {
     setContactData(data);
     try {
       localStorage.setItem("dn_contact_details", JSON.stringify(data));
     } catch {}
+
+    try {
+      const res = await fetch("/api/contact-info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-auth": "true",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        console.warn("Notice: Contact info database sync returned non-ok status");
+      }
+    } catch (err) {
+      console.error("Notice: Failed to sync contact info to database:", err);
+    }
   };
 
   // Save Projects changes to LocalStorage and PostgreSQL database
@@ -1040,7 +1221,7 @@ export default function AdminDashboardPage() {
     try {
       localStorage.setItem("dn_projects", JSON.stringify(newList));
     } catch {}
-    fetch("/api/projects/", {
+    fetch("/api/projects", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1071,6 +1252,17 @@ export default function AdminDashboardPage() {
     setCreators(newList);
     try {
       localStorage.setItem("dn_creators", JSON.stringify(newList));
+      window.dispatchEvent(new Event("storage"));
+    } catch {}
+  };
+
+  // Save Top Creators of the Month Spotlight to LocalStorage & Dispatch Storage Event
+  const updateTopCreatorsWithStorage = (newIds: string[]) => {
+    const clamped = newIds.slice(0, 5);
+    setTopCreatorIds(clamped);
+    try {
+      localStorage.setItem("dn_top_creators", JSON.stringify(clamped));
+      window.dispatchEvent(new Event("storage"));
     } catch {}
   };
 
@@ -1084,17 +1276,71 @@ export default function AdminDashboardPage() {
 
   const updateStudioServicesWithStorage = (services: StudioServiceDetail[]) => {
     setStudioServices(services);
-    localStorage.setItem("dn_studio_services", JSON.stringify(services));
+    try {
+      localStorage.setItem("dn_studio_services", JSON.stringify(services));
+    } catch {}
+    fetch("/api/services", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
+      body: JSON.stringify({ studio: services }),
+    }).catch((err) => console.error("Failed to sync studio services to DB:", err));
   };
 
   const updateBuildServicesWithStorage = (services: BuildServiceDetail[]) => {
     setBuildServices(services);
-    localStorage.setItem("dn_build_services", JSON.stringify(services));
+    try {
+      localStorage.setItem("dn_build_services", JSON.stringify(services));
+    } catch {}
+    fetch("/api/services", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
+      body: JSON.stringify({ build: services }),
+    }).catch((err) => console.error("Failed to sync build services to DB:", err));
   };
 
   const updateMaterialsWithStorage = (mats: MaterialCategory[]) => {
     setMaterials(mats);
     localStorage.setItem("dn_build_materials", JSON.stringify(mats));
+  };
+
+  const updateTestimonialsWithStorage = (list: TestimonialItem[]) => {
+    setTestimonials(list);
+    try {
+      localStorage.setItem("dn_testimonials", JSON.stringify(list));
+    } catch {}
+    fetch("/api/testimonials", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
+      body: JSON.stringify(list),
+    }).catch((err) => console.error("Failed to sync testimonials to DB:", err));
+  };
+
+  const updateBrandsWithStorage = (list: PartnerBrand[]) => {
+    setPartnerBrands(list);
+    try {
+      localStorage.setItem("dn_partner_brands", JSON.stringify(list));
+    } catch {}
+    fetch("/api/brands", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-auth": "true",
+      },
+      credentials: "include",
+      body: JSON.stringify(list),
+    }).catch((err) => console.error("Failed to sync partner brands to DB:", err));
   };
 
   const showToast = (msg: string) => {
@@ -1360,6 +1606,9 @@ export default function AdminDashboardPage() {
     const backup = {
       projects,
       creators,
+      topCreatorIds,
+      testimonials,
+      partnerBrands,
       rentals,
       hotels,
       inquiries,
@@ -1422,6 +1671,9 @@ export default function AdminDashboardPage() {
         const data = JSON.parse(ev.target?.result as string);
         if (data.projects) { setProjects(data.projects); localStorage.setItem("dn_projects", JSON.stringify(data.projects)); }
         if (data.creators) { setCreators(data.creators); localStorage.setItem("dn_creators", JSON.stringify(data.creators)); }
+        if (data.topCreatorIds) { setTopCreatorIds(data.topCreatorIds); localStorage.setItem("dn_top_creators", JSON.stringify(data.topCreatorIds)); }
+        if (data.testimonials) { setTestimonials(data.testimonials); localStorage.setItem("dn_testimonials", JSON.stringify(data.testimonials)); }
+        if (data.partnerBrands) { setPartnerBrands(data.partnerBrands); localStorage.setItem("dn_partner_brands", JSON.stringify(data.partnerBrands)); }
         if (data.rentals) { setRentals(data.rentals); localStorage.setItem("dn_stay_rentals", JSON.stringify(data.rentals)); }
         if (data.hotels) { setHotels(data.hotels); localStorage.setItem("dn_stay_hotels", JSON.stringify(data.hotels)); }
         if (data.incomeRecords) { setIncomeRecords(data.incomeRecords); localStorage.setItem("dn_admin_income", JSON.stringify(data.incomeRecords)); }
@@ -1641,7 +1893,7 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage(updatedList, [newLog, ...incomeAuditLogs]);
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -1681,7 +1933,7 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage([newRecord, ...incomeRecords], [newLog, ...incomeAuditLogs]);
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -1708,7 +1960,7 @@ export default function AdminDashboardPage() {
       };
 
       updateIncomeWithStorage(updatedList, [newLog, ...incomeAuditLogs]);
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -2107,13 +2359,164 @@ export default function AdminDashboardPage() {
     setEditingMaterial(null);
   };
 
+  // Testimonials Handlers & Filters
+  const handleDeleteTestimonial = (id: string) => {
+    if (confirm("Delete this client testimonial?")) {
+      const next = testimonials.filter((t) => t.id !== id);
+      updateTestimonialsWithStorage(next);
+      showToast("Testimonial deleted");
+    }
+  };
+
+  const handleSaveTestimonial = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const name = ((formData.get("name") as string) || "").trim();
+    const role = ((formData.get("role") as string) || "").trim();
+    const quote = ((formData.get("quote") as string) || "").trim();
+    const avatar = testimonialAvatar.trim() || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80`;
+
+    if (!name || !quote) {
+      alert("Name and quote are required.");
+      return;
+    }
+
+    const item: TestimonialItem = {
+      id: editingTestimonial ? editingTestimonial.id : `test_${Date.now()}`,
+      name,
+      role: role || "Verified Client",
+      rating: testimonialRating,
+      avatar,
+      quote,
+    };
+
+    if (editingTestimonial) {
+      const next = testimonials.map((t) => (t.id === editingTestimonial.id ? item : t));
+      updateTestimonialsWithStorage(next);
+      showToast("Testimonial updated");
+    } else {
+      const next = [item, ...testimonials];
+      updateTestimonialsWithStorage(next);
+      showToast("Testimonial added");
+    }
+
+    setTestimonialModalOpen(false);
+    setEditingTestimonial(null);
+  };
+
+  const filteredTestimonials = useMemo(() => {
+    return testimonials.filter((t) => {
+      const q = testimonialSearchQuery.toLowerCase().trim();
+      return (
+        !q ||
+        t.name.toLowerCase().includes(q) ||
+        t.role.toLowerCase().includes(q) ||
+        t.quote.toLowerCase().includes(q)
+      );
+    });
+  }, [testimonials, testimonialSearchQuery]);
+
+  // Partner Brands Handlers & Filters
+  const handleDeleteBrand = (name: string) => {
+    if (confirm(`Remove "${name}" from partner brands?`)) {
+      const next = partnerBrands.filter((b) => b.name.toLowerCase() !== name.toLowerCase());
+      updateBrandsWithStorage(next);
+      showToast("Partner brand removed");
+    }
+  };
+
+  const handleSaveBrand = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const name = ((formData.get("name") as string) || "").trim().toUpperCase();
+    const category = ((formData.get("category") as string) || "").trim();
+
+    if (!name || !category) {
+      alert("Brand name and category are required.");
+      return;
+    }
+
+    const item: PartnerBrand = {
+      id: editingBrand?.id || `brand_${Date.now()}`,
+      name,
+      category,
+    };
+
+    if (editingBrand) {
+      const next = partnerBrands.map((b) =>
+        (b.id && b.id === editingBrand.id) || b.name === editingBrand.name ? item : b
+      );
+      updateBrandsWithStorage(next);
+      showToast("Partner brand updated");
+    } else {
+      const next = [item, ...partnerBrands];
+      updateBrandsWithStorage(next);
+      showToast("Partner brand added");
+    }
+
+    setBrandModalOpen(false);
+    setEditingBrand(null);
+  };
+
+  const filteredPartnerBrands = useMemo(() => {
+    return partnerBrands.filter((b) => {
+      const q = brandSearchQuery.toLowerCase().trim();
+      return (
+        !q ||
+        b.name.toLowerCase().includes(q) ||
+        b.category.toLowerCase().includes(q)
+      );
+    });
+  }, [partnerBrands, brandSearchQuery]);
+
   // Creators Handlers & Multi-Field Filter
   const handleDeleteCreator = (id: string, name: string) => {
     if (!confirm(`Are you sure you want to remove ${name} from creators roster?`)) return;
     const next = creators.filter((c) => c.id !== id);
     updateCreatorsWithStorage(next);
+    if (topCreatorIds.includes(id)) {
+      updateTopCreatorsWithStorage(topCreatorIds.filter((cid) => cid !== id));
+    }
     showToast(`${name} removed from roster`);
     if (viewingCreator?.id === id) setViewingCreator(null);
+  };
+
+  const handleRemoveFromTop = (creatorId: string, name?: string) => {
+    const next = topCreatorIds.filter((id) => id !== creatorId);
+    updateTopCreatorsWithStorage(next);
+    showToast(`${name || "Creator"} removed from Top 5 spotlight`);
+  };
+
+  const handleAssignToTopSpot = (spotIndex: number, newCreatorId: string) => {
+    const newIds = [...topCreatorIds];
+    const existingIndex = newIds.indexOf(newCreatorId);
+    if (existingIndex !== -1 && existingIndex !== spotIndex) {
+      newIds.splice(existingIndex, 1);
+    }
+    newIds[spotIndex] = newCreatorId;
+    const filtered = newIds.filter(Boolean).slice(0, 5);
+    updateTopCreatorsWithStorage(filtered);
+    const creatorName = creators.find((c) => c.id === newCreatorId)?.name || "Creator";
+    showToast(`${creatorName} assigned to Spot #${spotIndex + 1}`);
+  };
+
+  const handleSwapTopSpot = (slotIndex: number, newCreatorId: string) => {
+    const newIds = [...topCreatorIds];
+    const existingIndex = newIds.indexOf(newCreatorId);
+    if (existingIndex !== -1) {
+      const temp = newIds[slotIndex];
+      newIds[slotIndex] = newCreatorId;
+      newIds[existingIndex] = temp;
+    } else {
+      newIds[slotIndex] = newCreatorId;
+    }
+    updateTopCreatorsWithStorage(newIds.filter(Boolean).slice(0, 5));
+    const creatorName = creators.find((c) => c.id === newCreatorId)?.name || "Creator";
+    showToast(`Spot #${slotIndex + 1} updated to ${creatorName}`);
   };
 
   const handleCreatorAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2616,6 +3019,8 @@ export default function AdminDashboardPage() {
       studioServices,
       buildServices,
       materials,
+      testimonials,
+      partnerBrands,
       settings,
       exportedAt: new Date().toISOString(),
     };
@@ -3009,6 +3414,7 @@ export default function AdminDashboardPage() {
               { id: "creators", label: "Creators", icon: Users, count: creators.length },
               { id: "stays", label: "Stay & Rentals", icon: HomeIcon, count: rentals.length + hotels.length },
               { id: "portfolio", label: "Portfolio", icon: Building2, count: projects.length },
+              { id: "testimonials", label: "Testimonials & Brands", icon: MessageSquareQuote, count: testimonials.length + partnerBrands.length },
               { id: "about", label: "About Page", icon: Info, count: null },
               { id: "contact", label: "Contact Info", icon: PhoneCall, count: null },
               { id: "settings", label: "Settings", icon: Settings, count: null },
@@ -4340,6 +4746,187 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            {/* Top Creators of the Month Spotlight Section (5 Spots) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className={`text-sm sm:text-base font-semibold tracking-tight uppercase ${
+                    isDark ? "text-stone-100" : "text-stone-800"
+                  }`}>
+                    Top Creators of the Month
+                  </h2>
+                  <span className={`text-xs font-normal ${
+                    isDark ? "text-rose-400" : "text-rose-600"
+                  }`}>
+                    ({topCreatorIds.length} / 5 assigned)
+                  </span>
+                </div>
+              </div>
+
+              {/* 5 Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                {[0, 1, 2, 3, 4].map((slotIndex) => {
+                  const creatorId = topCreatorIds[slotIndex];
+                  const creator = creators.find((c) => c.id === creatorId);
+                  const slotLabels = [
+                    { title: "#1 Spotlight", badge: "Center Peak" },
+                    { title: "#2 Rank", badge: "Left Wing" },
+                    { title: "#3 Rank", badge: "Right Wing" },
+                    { title: "#4 Rank", badge: "Outer Left" },
+                    { title: "#5 Rank", badge: "Outer Right" },
+                  ];
+                  const meta = slotLabels[slotIndex];
+
+                  return (
+                    <div
+                      key={slotIndex}
+                      className={`relative rounded-2xl p-4 border transition-all flex flex-col justify-between min-h-[170px] ${
+                        creator
+                          ? slotIndex === 0
+                            ? isDark
+                              ? "bg-stone-900 border-rose-900/60 shadow-xs ring-1 ring-rose-900/40"
+                              : "bg-white border-rose-300 shadow-xs ring-1 ring-rose-200/50"
+                            : isDark
+                            ? "bg-stone-900 border-stone-800 shadow-xs hover:border-stone-700"
+                            : "bg-white border-stone-200/90 shadow-xs hover:border-stone-300"
+                          : isDark
+                          ? "bg-stone-900/40 border-stone-800 border-dashed hover:border-stone-700"
+                          : "bg-white/70 border-stone-300 border-dashed hover:border-rose-300"
+                      }`}
+                    >
+                      {/* Card Header (No dividing line) */}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs font-medium ${
+                            slotIndex === 0
+                              ? isDark ? "text-rose-400" : "text-rose-600"
+                              : isDark ? "text-stone-200" : "text-stone-700"
+                          }`}>
+                            {meta.title}
+                          </span>
+                          <span className={`text-[10px] font-normal ${
+                            isDark ? "text-stone-400" : "text-stone-500"
+                          }`}>
+                            · {meta.badge}
+                          </span>
+                        </div>
+                        {creator && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFromTop(creator.id, creator.name)}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${
+                              isDark
+                                ? "text-stone-400 hover:text-rose-400 hover:bg-stone-800"
+                                : "text-stone-400 hover:text-rose-600 hover:bg-rose-50"
+                            }`}
+                            title="Remove from Top 5 list"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {creator ? (
+                        <div className="py-2 space-y-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-10 h-10 rounded-full overflow-hidden shrink-0 border ${
+                              isDark ? "border-stone-700 bg-stone-800" : "border-stone-200 bg-stone-100"
+                            }`}>
+                              <img src={creator.avatar} alt={creator.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className={`text-xs sm:text-sm font-medium truncate ${
+                                isDark ? "text-stone-100" : "text-stone-800"
+                              }`}>
+                                {creator.name}
+                              </div>
+                              <div className={`text-[11px] font-normal truncate ${
+                                isDark ? "text-stone-400" : "text-stone-500"
+                              }`}>
+                                {creator.category}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className={`font-mono font-normal ${
+                              isDark ? "text-stone-400" : "text-stone-500"
+                            }`}>{creator.handle}</span>
+                            <span className={`font-medium ${
+                              isDark ? "text-rose-400" : "text-rose-600"
+                            }`}>{creator.followersCount}</span>
+                          </div>
+
+                          {/* Quick Swap Dropdown */}
+                          <select
+                            value={creator.id}
+                            onChange={(e) => {
+                              const newId = e.target.value;
+                              if (newId === "__remove__") {
+                                handleRemoveFromTop(creator.id, creator.name);
+                              } else if (newId && newId !== creator.id) {
+                                handleSwapTopSpot(slotIndex, newId);
+                              }
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-xl border text-xs font-normal outline-none cursor-pointer transition-all ${
+                              isDark
+                                ? "bg-stone-800 border-stone-700 text-stone-200 hover:border-stone-600"
+                                : "bg-stone-50 border-stone-200 text-stone-700 hover:border-rose-300 hover:bg-white"
+                            }`}
+                          >
+                            <option value={creator.id}>Keep: {creator.name}</option>
+                            <option value="__remove__">✕ Remove from Top 5</option>
+                            <optgroup label="Swap with other creator:">
+                              {creators
+                                .filter((c) => !topCreatorIds.includes(c.id))
+                                .map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    Swap: {c.name} ({c.category})
+                                  </option>
+                                ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="py-4 text-center space-y-2 flex-1 flex flex-col justify-center items-center">
+                          <span className={`text-xs font-medium ${
+                            isDark ? "text-stone-400" : "text-stone-600"
+                          }`}>
+                            Empty Spot #{slotIndex + 1}
+                          </span>
+
+                          {/* Assign dropdown */}
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAssignToTopSpot(slotIndex, e.target.value);
+                                e.target.value = "";
+                              }
+                            }}
+                            className={`w-full px-2.5 py-1.5 rounded-xl border text-xs font-normal outline-none cursor-pointer transition-all ${
+                              isDark
+                                ? "bg-stone-800 border-stone-700 text-stone-300 hover:border-stone-600"
+                                : "bg-white border-stone-200 text-stone-700 hover:border-rose-400 shadow-2xs"
+                            }`}
+                          >
+                            <option value="">+ Assign Creator...</option>
+                            {creators
+                              .filter((c) => !topCreatorIds.includes(c.id))
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} ({c.category})
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Search Bar & Category Filter Chips */}
             <div className="space-y-3">
               <div className="relative">
@@ -4390,6 +4977,9 @@ export default function AdminDashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredCreators.map((c) => {
                   const hasVideo = Boolean(c.videoPreviewUrl || isVideoMedia(c.featuredImage));
+                  const isTop = topCreatorIds.includes(c.id);
+                  const topRank = isTop ? topCreatorIds.indexOf(c.id) + 1 : null;
+
                   return (
                     <div
                       key={c.id}
@@ -4422,26 +5012,34 @@ export default function AdminDashboardPage() {
                             </div>
                           </div>
 
-                          {/* Media Type Badge */}
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 flex items-center gap-1 ${
-                              hasVideo
-                                ? "bg-red-50 text-red-700 border border-red-200/60"
-                                : "bg-stone-100 text-stone-600"
-                            }`}
-                          >
-                            {hasVideo ? (
-                              <>
-                                <Play className="w-2.5 h-2.5 fill-current" />
-                                <span>Reel / Video</span>
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="w-2.5 h-2.5" />
-                                <span>Photo</span>
-                              </>
+                          {/* Media Type & Top Badges */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {isTop && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center gap-1 shrink-0">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                                <span>Top #{topRank}</span>
+                              </span>
                             )}
-                          </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 flex items-center gap-1 ${
+                                hasVideo
+                                  ? "bg-red-50 text-red-700 border border-red-200/60"
+                                  : "bg-stone-100 text-stone-600"
+                              }`}
+                            >
+                              {hasVideo ? (
+                                <>
+                                  <Play className="w-2.5 h-2.5 fill-current" />
+                                  <span>Reel / Video</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera className="w-2.5 h-2.5" />
+                                  <span>Photo</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Role & Category */}
@@ -4482,6 +5080,52 @@ export default function AdminDashboardPage() {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          {isTop ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFromTop(c.id, c.name)}
+                              className="px-2.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                              title="Remove from Top 5 Spotlight (keeps creator in normal roster)"
+                            >
+                              <Star className="w-3 h-3 fill-current text-rose-500" />
+                              <span>Top #{topRank}</span>
+                            </button>
+                          ) : topCreatorIds.length < 5 ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...topCreatorIds, c.id];
+                                updateTopCreatorsWithStorage(next);
+                                showToast(`${c.name} assigned to Top Creators spotlight`);
+                              }}
+                              className="px-2.5 py-1.5 rounded-full bg-stone-100 hover:bg-rose-50 hover:text-rose-600 text-stone-600 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                              title="Set as Top of Month"
+                            >
+                              <Star className="w-3 h-3 text-stone-400" />
+                              <span>Set as Top</span>
+                            </button>
+                          ) : (
+                            <select
+                              defaultValue=""
+                              onChange={(e) => {
+                                if (e.target.value !== "") {
+                                  const spotIdx = parseInt(e.target.value, 10);
+                                  handleAssignToTopSpot(spotIdx, c.id);
+                                  e.target.value = "";
+                                }
+                              }}
+                              className="px-2 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-medium outline-none cursor-pointer"
+                              title="Replace a spot in Top 5"
+                            >
+                              <option value="">☆ Make Top 5...</option>
+                              <option value="0">Spot #1 (Center)</option>
+                              <option value="1">Spot #2</option>
+                              <option value="2">Spot #3</option>
+                              <option value="3">Spot #4</option>
+                              <option value="4">Spot #5</option>
+                            </select>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => {
@@ -4878,6 +5522,278 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------- */}
+        {/* TAB: TESTIMONIALS & PARTNER BRANDS                      */}
+        {/* ------------------------------------------------------- */}
+        {activeTab === "testimonials" && (
+          <div className="space-y-6 animate-in fade-in max-w-6xl">
+            {/* Header */}
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b ${isDark ? "border-stone-800" : "border-stone-200/60"}`}>
+              <div>
+                <h1 className={`text-2xl sm:text-3xl font-semibold tracking-tight ${isDark ? "text-white" : "text-stone-900"}`}>
+                  Testimonials & Brands
+                </h1>
+              </div>
+
+              {/* Sub-tab Switcher */}
+              <div className={`flex items-center gap-1.5 p-1 rounded-xl border ${isDark ? "bg-stone-900 border-stone-800" : "bg-stone-100 border-stone-200"}`}>
+                <button
+                  type="button"
+                  onClick={() => setTestimonialsActiveSubTab("reviews")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    testimonialsActiveSubTab === "reviews"
+                      ? isDark
+                        ? "bg-stone-800 text-white shadow-xs"
+                        : "bg-white text-stone-900 shadow-xs"
+                      : isDark
+                      ? "text-stone-400 hover:text-stone-200"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Client Reviews ({testimonials.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTestimonialsActiveSubTab("brands")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    testimonialsActiveSubTab === "brands"
+                      ? isDark
+                        ? "bg-stone-800 text-white shadow-xs"
+                        : "bg-white text-stone-900 shadow-xs"
+                      : isDark
+                      ? "text-stone-400 hover:text-stone-200"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  Partner Brands ({partnerBrands.length})
+                </button>
+              </div>
+            </div>
+
+            {/* SUB-TAB 1: CLIENT TESTIMONIALS */}
+            {testimonialsActiveSubTab === "reviews" && (
+              <div className="space-y-6">
+                {/* Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-stone-500" : "text-stone-400"}`} />
+                    <input
+                      type="text"
+                      placeholder="Search reviews by name, role, quote..."
+                      value={testimonialSearchQuery}
+                      onChange={(e) => setTestimonialSearchQuery(e.target.value)}
+                      className={`w-full pl-9 pr-4 py-2 text-xs rounded-xl border transition-colors outline-none ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder-stone-500 focus:border-stone-700"
+                          : "bg-white border-stone-200 text-stone-900 placeholder-stone-400 focus:border-stone-400"
+                      }`}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTestimonial(null);
+                      setTestimonialRating(5);
+                      setTestimonialAvatar("");
+                      setTestimonialModalOpen(true);
+                    }}
+                    className={`px-4 py-2 rounded-full ${
+                      isDark
+                        ? "bg-white text-stone-900 hover:bg-stone-200"
+                        : "bg-stone-900 hover:bg-stone-800 text-white"
+                    } text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Testimonial</span>
+                  </button>
+                </div>
+
+                {/* Testimonial Cards Grid */}
+                {filteredTestimonials.length === 0 ? (
+                  <div className={`p-12 text-center rounded-2xl border ${isDark ? "bg-stone-900/50 border-stone-800" : "bg-stone-50 border-stone-200"}`}>
+                    <MessageSquareQuote className={`w-8 h-8 mx-auto mb-2 ${isDark ? "text-stone-600" : "text-stone-400"}`} />
+                    <p className={`text-sm font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>No testimonials found</p>
+                    <p className={`text-xs mt-1 ${isDark ? "text-stone-500" : "text-stone-400"}`}>Add client reviews to highlight satisfied clients across your website.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredTestimonials.map((t) => (
+                      <div
+                        key={t.id}
+                        className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+                          isDark
+                            ? "bg-stone-900/70 border-stone-800 hover:border-stone-700"
+                            : "bg-white border-stone-200 hover:border-stone-300 shadow-xs hover:shadow-md"
+                        }`}
+                      >
+                        <div>
+                          {/* Stars */}
+                          <div className="flex items-center gap-1 text-rose-600 mb-3">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${i < t.rating ? "fill-rose-600 text-rose-600" : isDark ? "text-stone-700" : "text-stone-200"}`}
+                              />
+                            ))}
+                            <span className="text-[10px] font-mono text-neutral-400 ml-1">({t.rating}/5)</span>
+                          </div>
+
+                          {/* Quote */}
+                          <p className={`text-xs leading-relaxed mb-4 line-clamp-4 ${isDark ? "text-stone-300" : "text-stone-700"}`}>
+                            &ldquo;{t.quote}&rdquo;
+                          </p>
+                        </div>
+
+                        {/* Author & Action buttons */}
+                        <div className={`pt-3 border-t flex items-center justify-between gap-3 ${isDark ? "border-stone-800" : "border-stone-100"}`}>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={t.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
+                              alt={t.name}
+                              className="w-8 h-8 rounded-full object-cover shrink-0 border border-stone-200"
+                            />
+                            <div className="min-w-0">
+                              <p className={`text-xs font-bold truncate ${isDark ? "text-white" : "text-stone-900"}`}>{t.name}</p>
+                              <p className={`text-[10px] truncate ${isDark ? "text-stone-400" : "text-stone-500"}`}>{t.role}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingTestimonial(t);
+                                setTestimonialRating(t.rating);
+                                setTestimonialAvatar(t.avatar);
+                                setTestimonialModalOpen(true);
+                              }}
+                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                isDark
+                                  ? "border-stone-700 hover:bg-stone-800 text-stone-300"
+                                  : "border-stone-200 hover:bg-stone-100 text-stone-700"
+                              }`}
+                              title="Edit Review"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTestimonial(t.id)}
+                              className="p-1.5 rounded-lg border border-red-200/50 hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
+                              title="Delete Review"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SUB-TAB 2: PARTNER BRANDS */}
+            {testimonialsActiveSubTab === "brands" && (
+              <div className="space-y-6">
+                {/* Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-stone-500" : "text-stone-400"}`} />
+                    <input
+                      type="text"
+                      placeholder="Search brands by name, category..."
+                      value={brandSearchQuery}
+                      onChange={(e) => setBrandSearchQuery(e.target.value)}
+                      className={`w-full pl-9 pr-4 py-2 text-xs rounded-xl border transition-colors outline-none ${
+                        isDark
+                          ? "bg-stone-900 border-stone-800 text-white placeholder-stone-500 focus:border-stone-700"
+                          : "bg-white border-stone-200 text-stone-900 placeholder-stone-400 focus:border-stone-400"
+                      }`}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingBrand(null);
+                      setBrandModalOpen(true);
+                    }}
+                    className={`px-4 py-2 rounded-full ${
+                      isDark
+                        ? "bg-white text-stone-900 hover:bg-stone-200"
+                        : "bg-stone-900 hover:bg-stone-800 text-white"
+                    } text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Partner Brand</span>
+                  </button>
+                </div>
+
+                {/* Brands Grid */}
+                {filteredPartnerBrands.length === 0 ? (
+                  <div className={`p-12 text-center rounded-2xl border ${isDark ? "bg-stone-900/50 border-stone-800" : "bg-stone-50 border-stone-200"}`}>
+                    <Award className={`w-8 h-8 mx-auto mb-2 ${isDark ? "text-stone-600" : "text-stone-400"}`} />
+                    <p className={`text-sm font-medium ${isDark ? "text-stone-300" : "text-stone-700"}`}>No partner brands found</p>
+                    <p className={`text-xs mt-1 ${isDark ? "text-stone-500" : "text-stone-400"}`}>Add partner material brands to feature in the marquee banner.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {filteredPartnerBrands.map((b, idx) => (
+                      <div
+                        key={`${b.name}-${idx}`}
+                        className={`p-4 rounded-xl border flex flex-col justify-between transition-all group ${
+                          isDark
+                            ? "bg-stone-900/70 border-stone-800 hover:border-stone-700"
+                            : "bg-white border-stone-200 hover:border-stone-300 shadow-2xs hover:shadow-xs"
+                        }`}
+                      >
+                        <div>
+                          <p className={`text-sm font-black font-mono tracking-wider truncate mb-1 ${isDark ? "text-white" : "text-stone-900"}`}>
+                            {b.name}
+                          </p>
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold font-mono tracking-wider ${
+                            isDark ? "bg-stone-800 text-stone-300" : "bg-stone-100 text-stone-600"
+                          }`}>
+                            {b.category}
+                          </span>
+                        </div>
+
+                        <div className={`pt-3 mt-3 border-t flex items-center justify-end gap-1 ${isDark ? "border-stone-800" : "border-stone-100"}`}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingBrand(b);
+                              setBrandModalOpen(true);
+                            }}
+                            className={`p-1 rounded-md border transition-colors cursor-pointer ${
+                              isDark
+                                ? "border-stone-700 hover:bg-stone-800 text-stone-300"
+                                : "border-stone-200 hover:bg-stone-100 text-stone-700"
+                            }`}
+                            title="Edit Brand"
+                          >
+                            <Pencil className="w-2.5 h-2.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBrand(b.name)}
+                            className="p-1 rounded-md border border-red-200/50 hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
+                            title="Delete Brand"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -5357,10 +6273,10 @@ export default function AdminDashboardPage() {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                updateContactDataWithStorage(contactData);
-                showToast("Contact details updated successfully");
+                await updateContactDataWithStorage(contactData);
+                showToast("Contact details saved and synced to database!");
               }}
               className="space-y-6"
             >
@@ -9380,6 +10296,329 @@ export default function AdminDashboardPage() {
                 <span>Confirm & Restore</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT TESTIMONIAL                            */}
+      {/* ========================================================= */}
+      {testimonialModalOpen && (
+        <div
+          onClick={() => {
+            setTestimonialModalOpen(false);
+            setEditingTestimonial(null);
+          }}
+          className="fixed inset-0 z-[250] bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`rounded-3xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl border overflow-hidden animate-in zoom-in-95 duration-150 ${
+              isDark ? "bg-stone-900 border-stone-800 text-stone-100" : "bg-white border-stone-200/80 text-stone-900"
+            }`}
+          >
+            {/* Modal Header */}
+            <div className={`shrink-0 p-5 border-b flex items-center justify-between ${
+              isDark ? "bg-stone-900/80 border-stone-800" : "bg-stone-50/50 border-stone-100"
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                  <MessageSquareQuote className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold">
+                    {editingTestimonial ? "Edit Client Testimonial" : "Add Client Testimonial"}
+                  </h2>
+                  <p className="text-xs text-stone-500">
+                    Client review will reflect in home page & testimonials catalog
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setTestimonialModalOpen(false);
+                  setEditingTestimonial(null);
+                }}
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  isDark ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Form */}
+            <form onSubmit={handleSaveTestimonial} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Client Name *
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  defaultValue={editingTestimonial?.name || ""}
+                  placeholder="e.g. Maya Lin"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                    isDark
+                      ? "bg-stone-800/80 border-stone-700 focus:border-rose-500 text-stone-100"
+                      : "bg-white border-stone-300 focus:border-rose-500 text-stone-900"
+                  }`}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Role, Company or Location *
+                </label>
+                <input
+                  name="role"
+                  type="text"
+                  required
+                  defaultValue={editingTestimonial?.role || ""}
+                  placeholder="e.g. Design Director, Studio Arte | Milan"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                    isDark
+                      ? "bg-stone-800/80 border-stone-700 focus:border-rose-500 text-stone-100"
+                      : "bg-white border-stone-300 focus:border-rose-500 text-stone-900"
+                  }`}
+                />
+              </div>
+
+              {/* Star Rating */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Rating ({testimonialRating} / 5 Stars)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setTestimonialRating(star)}
+                      className={`p-1.5 rounded-lg transition-transform hover:scale-110 cursor-pointer ${
+                        star <= testimonialRating ? "text-amber-400" : "text-stone-300 dark:text-stone-700"
+                      }`}
+                    >
+                      <Star className="w-5 h-5 fill-current" />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-xs font-medium text-stone-500">
+                    {testimonialRating} {testimonialRating === 1 ? "Star" : "Stars"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Avatar URL & Presets */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Client Avatar / Photo URL
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
+                    {testimonialAvatar ? (
+                      <img
+                        src={testimonialAvatar}
+                        alt="Avatar preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-stone-400">NA</span>
+                    )}
+                  </div>
+                  <input
+                    type="url"
+                    value={testimonialAvatar}
+                    onChange={(e) => setTestimonialAvatar(e.target.value)}
+                    placeholder="https://images.unsplash.com/photo-..."
+                    className={`flex-1 px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                      isDark
+                        ? "bg-stone-800/80 border-stone-700 focus:border-rose-500 text-stone-100"
+                        : "bg-white border-stone-300 focus:border-rose-500 text-stone-900"
+                    }`}
+                  />
+                </div>
+                {/* Quick Avatar Presets */}
+                <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1">
+                  <span className="text-[11px] text-stone-400 shrink-0">Presets:</span>
+                  {[
+                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
+                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80",
+                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80",
+                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80"
+                  ].map((url, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setTestimonialAvatar(url)}
+                      className={`w-7 h-7 rounded-full overflow-hidden border shrink-0 transition-transform hover:scale-110 cursor-pointer ${
+                        testimonialAvatar === url ? "ring-2 ring-rose-500" : "border-stone-200 dark:border-stone-700"
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quote */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Client Quote / Review *
+                </label>
+                <textarea
+                  name="quote"
+                  rows={4}
+                  required
+                  defaultValue={editingTestimonial?.quote || ""}
+                  placeholder="Share the client's direct quote, feedback on architectural quality, communication, timelines, or craft..."
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all resize-none ${
+                    isDark
+                      ? "bg-stone-800/80 border-stone-700 focus:border-rose-500 text-stone-100"
+                      : "bg-white border-stone-300 focus:border-rose-500 text-stone-900"
+                  }`}
+                />
+              </div>
+
+              {/* Modal Footer Buttons */}
+              <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTestimonialModalOpen(false);
+                    setEditingTestimonial(null);
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                    isDark ? "bg-stone-800 hover:bg-stone-700 text-stone-300" : "bg-stone-100 hover:bg-stone-200 text-stone-700"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{editingTestimonial ? "Save Changes" : "Add Testimonial"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT PARTNER BRAND                           */}
+      {/* ========================================================= */}
+      {brandModalOpen && (
+        <div
+          onClick={() => {
+            setBrandModalOpen(false);
+            setEditingBrand(null);
+          }}
+          className="fixed inset-0 z-[250] bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`rounded-3xl max-w-md w-full shadow-2xl border overflow-hidden animate-in zoom-in-95 duration-150 ${
+              isDark ? "bg-stone-900 border-stone-800 text-stone-100" : "bg-white border-stone-200/80 text-stone-900"
+            }`}
+          >
+            {/* Modal Header */}
+            <div className={`p-5 border-b flex items-center justify-between ${
+              isDark ? "bg-stone-900/80 border-stone-800" : "bg-stone-50/50 border-stone-100"
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold">
+                    {editingBrand ? "Edit Partner Brand" : "Add Partner Brand"}
+                  </h2>
+                  <p className="text-xs text-stone-500">
+                    Displayed in the marquee on the home page
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBrandModalOpen(false);
+                  setEditingBrand(null);
+                }}
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  isDark ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveBrand} className="p-5 sm:p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Brand Name *
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  defaultValue={editingBrand?.name || ""}
+                  placeholder="e.g. ACNE STUDIOS, AESOP, KINFORK"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold tracking-wider outline-none transition-all uppercase ${
+                    isDark
+                      ? "bg-stone-800/80 border-stone-700 focus:border-amber-500 text-stone-100"
+                      : "bg-white border-stone-300 focus:border-amber-500 text-stone-900"
+                  }`}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Category / Industry *
+                </label>
+                <input
+                  name="category"
+                  type="text"
+                  required
+                  defaultValue={editingBrand?.category || ""}
+                  placeholder="e.g. Fashion, Luxury, Hospitality, Architecture"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
+                    isDark
+                      ? "bg-stone-800/80 border-stone-700 focus:border-amber-500 text-stone-100"
+                      : "bg-white border-stone-300 focus:border-amber-500 text-stone-900"
+                  }`}
+                />
+              </div>
+
+              {/* Modal Footer Buttons */}
+              <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBrandModalOpen(false);
+                    setEditingBrand(null);
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                    isDark ? "bg-stone-800 hover:bg-stone-700 text-stone-300" : "bg-stone-100 hover:bg-stone-200 text-stone-700"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{editingBrand ? "Save Brand" : "Add Brand"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

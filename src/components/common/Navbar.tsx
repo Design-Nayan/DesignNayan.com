@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Menu, X, PhoneCall } from "lucide-react";
@@ -13,6 +13,33 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCreators = pathname?.startsWith("/creators");
+
+  const [whatsappUrl, setWhatsappUrl] = useState(siteConfig.contact.whatsapp);
+  const [phoneDisplay, setPhoneDisplay] = useState(siteConfig.contact.phoneDisplay);
+  const [phoneRaw, setPhoneRaw] = useState(siteConfig.contact.phone);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dn_contact_details");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.whatsapp) setWhatsappUrl(parsed.whatsapp);
+        if (parsed?.phoneDisplay) setPhoneDisplay(parsed.phoneDisplay);
+        if (parsed?.phone) setPhoneRaw(parsed.phone);
+      }
+    } catch {}
+
+    fetch("/api/contact-info", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((resData) => {
+        if (resData?.success && resData?.data) {
+          if (resData.data.whatsapp) setWhatsappUrl(resData.data.whatsapp);
+          if (resData.data.phoneDisplay) setPhoneDisplay(resData.data.phoneDisplay);
+          if (resData.data.phone) setPhoneRaw(resData.data.phone);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header
@@ -59,7 +86,7 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Mobile Quick WhatsApp / Call Trigger */}
           <a
-            href={siteConfig.contact.whatsapp}
+            href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="md:hidden w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform bg-rose-50 border border-rose-200 text-rose-600"
@@ -131,11 +158,11 @@ export function Navbar() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
             <a
-              href={`tel:${siteConfig.contact.phone.replace(/[^0-9+]/g, '')}`}
+              href={`tel:${phoneRaw.replace(/[^0-9+]/g, '')}`}
               className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 bg-neutral-50 border border-neutral-200 text-neutral-800"
             >
               <PhoneCall className="w-3.5 h-3.5 text-rose-600" />
-              <span>Call {siteConfig.contact.phoneDisplay}</span>
+              <span>Call {phoneDisplay}</span>
             </a>
           </div>
         </div>

@@ -1,11 +1,45 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Star, ArrowLeft, MessageSquareQuote, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Star, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { testimonialsData } from "../data/testimonials.data";
+import { TestimonialItem } from "../types/testimonials.types";
 
 export function TestimonialsCatalogView() {
+  const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(testimonialsData);
+
+  useEffect(() => {
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem("dn_testimonials");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTestimonialsList(parsed);
+          }
+        }
+      } catch {}
+    };
+
+    loadFromStorage();
+
+    fetch("/api/testimonials", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
+          setTestimonialsList(json.data);
+          try {
+            localStorage.setItem("dn_testimonials", JSON.stringify(json.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Failed to fetch live testimonials:", err));
+
+    window.addEventListener("storage", loadFromStorage);
+    return () => window.removeEventListener("storage", loadFromStorage);
+  }, []);
+
   return (
     <div className="min-h-screen bg-neutral-50/60 select-none pb-20 font-sans">
       
@@ -53,7 +87,7 @@ export function TestimonialsCatalogView() {
       {/* 2. Reviews Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 -mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {testimonialsData.map((testimonial) => (
+          {testimonialsList.map((testimonial) => (
             <div
               key={testimonial.id}
               className="rounded-3xl bg-white border border-neutral-200/90 p-6 sm:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"

@@ -31,15 +31,23 @@ export function CreatorsView() {
   const lenisRef = React.useRef<Lenis | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("dn_creators");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAllCreators(parsed);
-        }
-      } catch {}
-    }
+    const loadCreators = () => {
+      const saved = localStorage.getItem("dn_creators");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAllCreators([...parsed]);
+            return;
+          }
+        } catch {}
+      }
+      setAllCreators([...CREATORS_DATA]);
+    };
+
+    loadCreators();
+    window.addEventListener("storage", loadCreators);
+    return () => window.removeEventListener("storage", loadCreators);
   }, []);
 
   useEffect(() => {

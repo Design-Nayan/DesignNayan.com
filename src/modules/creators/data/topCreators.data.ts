@@ -48,11 +48,19 @@ export const TOP_CREATORS_SPOTLIGHT: TopCreatorSpotlight[] = [
  * Resolves full Creator objects for Top Creators of Month based on admin configuration.
  * If an admin customizes `TOP_CREATORS_SPOTLIGHT`, this ensures the frontend displays them in exact rank order.
  */
-export function getTopCreators(customRoster: Creator[] = CREATORS_DATA): Creator[] {
+export function getTopCreators(
+  customRoster: Creator[] = CREATORS_DATA,
+  customSpotlightIds?: string[]
+): Creator[] {
+  const spotlightIds =
+    customSpotlightIds && customSpotlightIds.length > 0
+      ? customSpotlightIds
+      : TOP_CREATORS_SPOTLIGHT.map((s) => s.creatorId);
+
   const resolved: Creator[] = [];
 
-  for (const spotlight of TOP_CREATORS_SPOTLIGHT) {
-    const found = customRoster.find((c) => c.id === spotlight.creatorId);
+  for (const id of spotlightIds) {
+    const found = customRoster.find((c) => c.id === id);
     if (found && !resolved.some((r) => r.id === found.id)) {
       resolved.push(found);
     }

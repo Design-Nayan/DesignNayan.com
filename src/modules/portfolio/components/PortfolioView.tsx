@@ -200,7 +200,7 @@ export function PortfolioView() {
     loadData();
 
     // Fetch live from database so all visitors and reloads receive the owner's updates
-    fetch("/api/projects/")
+    fetch("/api/projects")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {

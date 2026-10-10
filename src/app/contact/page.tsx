@@ -10,6 +10,7 @@ export default function ContactPage() {
   const [contactInfo, setContactInfo] = useState<ContactDetailsData>(initialContactData);
 
   useEffect(() => {
+    // 1. Instant local restore
     try {
       const saved = localStorage.getItem("dn_contact_details");
       if (saved) {
@@ -19,6 +20,19 @@ export default function ContactPage() {
         }
       }
     } catch {}
+
+    // 2. Live database fetch from PostgreSQL
+    fetch("/api/contact-info", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((resData) => {
+        if (resData?.success && resData?.data) {
+          setContactInfo(resData.data);
+          try {
+            localStorage.setItem("dn_contact_details", JSON.stringify(resData.data));
+          } catch {}
+        }
+      })
+      .catch((err) => console.warn("Notice: Contact page using fallback contact info:", err));
   }, []);
 
   const [formData, setFormData] = useState({

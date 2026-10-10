@@ -121,16 +121,43 @@ export function StudioView() {
   const [services, setServices] = useState<StudioServiceDetail[]>(studioServicesData);
 
   useEffect(() => {
-    const saved = localStorage.getItem("dn_studio_services");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setServices(parsed);
+    const loadSaved = () => {
+      const saved = localStorage.getItem("dn_studio_services");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setServices(parsed);
+          }
+        } catch {}
+      }
+    };
+
+    loadSaved();
+
+    // Fetch live from database
+    fetch("/api/services", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.studio) && data.studio.length > 0) {
+          setServices(data.studio);
+          try {
+            localStorage.setItem("dn_studio_services", JSON.stringify(data.studio));
+          } catch {}
         }
-      } catch {}
-    }
+      })
+      .catch((err) => console.warn("Failed to fetch live studio services:", err));
+
+    window.addEventListener("storage", loadSaved);
+    return () => window.removeEventListener("storage", loadSaved);
   }, []);
+
+  // Ensure horizontal category tracks always start at the first card on load or when services update
+  useEffect(() => {
+    Object.values(scrollRefs.current).forEach((el) => {
+      if (el) el.scrollLeft = 0;
+    });
+  }, [services]);
 
   // ==========================================
   // 1. ROTATING TYPING ANIMATION (Smooth & Fluid)
@@ -499,7 +526,7 @@ export function StudioView() {
                   ref={(el) => {
                     scrollRefs.current[catConfig.category] = el;
                   }}
-                  className="flex gap-3 sm:gap-4 lg:gap-4.5 overflow-x-auto no-scrollbar snap-x snap-mandatory overscroll-x-contain -mx-3.5 px-3.5 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0 py-1.5 sm:py-2 scroll-pl-3.5 sm:scroll-pl-6"
+                  className="flex gap-3 sm:gap-4 lg:gap-4.5 overflow-x-auto no-scrollbar [overflow-anchor:none] overscroll-x-contain -mx-3.5 px-3.5 sm:-mx-6 sm:px-6 xl:mx-0 xl:px-0 py-1.5 sm:py-2"
                 >
                   {sectionServices.map((service) => (
                     <div

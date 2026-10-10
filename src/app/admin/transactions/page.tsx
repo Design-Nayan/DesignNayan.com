@@ -74,7 +74,7 @@ export default function AllTransactionsPage() {
     }
 
     // Live Database Sync: Finance Records and Immutable Audit Logs from PostgreSQL
-    fetch("/api/finances/", { credentials: "include" })
+    fetch("/api/finances", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data && data.success) {
@@ -302,7 +302,7 @@ export default function AllTransactionsPage() {
         date,
         paymentMethod,
       };
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -341,7 +341,7 @@ export default function AllTransactionsPage() {
       setAuditLogs(updatedLogs);
       localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
 
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -375,7 +375,7 @@ export default function AllTransactionsPage() {
       setAuditLogs(updatedLogs);
       localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
 
-      fetch("/api/finances/", {
+      fetch("/api/finances", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

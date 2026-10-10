@@ -54,7 +54,7 @@ export default function AllHistoryPage() {
     }
 
     // Live Database Sync: Immutable Audit Logs from PostgreSQL
-    fetch("/api/finances/")
+    fetch("/api/finances")
       .then((res) => res.json())
       .then((data) => {
         if (data && data.success && Array.isArray(data.logs)) {
