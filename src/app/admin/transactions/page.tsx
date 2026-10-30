@@ -37,14 +37,13 @@ import {
   dynamicMatch,
   buildTransactionSearchString,
 } from "../finances-shared";
+import {
+  serverGetFinances,
+  serverUpsertFinancialRecord,
+  serverDeleteFinancialRecord,
+} from "@/lib/admin-actions";
 
 export default function AllTransactionsPage() {
-  // Authentication
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passcode, setPasscode] = useState("");
-  const [showPasscode, setShowPasscode] = useState(false);
-  const [authError, setAuthError] = useState("");
-
   // Data states
   const [incomeRecords, setIncomeRecords] = useState<IncomeRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<IncomeAuditLog[]>([]);
@@ -66,107 +65,51 @@ export default function AllTransactionsPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Check auth & load data from localStorage
+  // Load data from localStorage + live Supabase DB
   useEffect(() => {
-    const authStatus = localStorage.getItem(DN_ADMIN_AUTH_KEY);
-    if (authStatus === "authenticated" || authStatus === "true") {
-      setIsAuthenticated(true);
-    }
+    let isMounted = true;
+    const loadFinances = () => {
+      try {
+        const storedIncome = localStorage.getItem(DN_ADMIN_INCOME_KEY);
+        if (storedIncome) {
+          const parsed = JSON.parse(storedIncome);
+          if (Array.isArray(parsed)) setIncomeRecords(parsed);
+        }
 
-    // Live Database Sync: Finance Records and Immutable Audit Logs from PostgreSQL
-    fetch("/api/finances", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.success) {
-          if (Array.isArray(data.records)) {
-            setIncomeRecords(data.records);
-            try {
-              localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(data.records));
-            } catch {}
-          }
-          if (Array.isArray(data.logs)) {
-            setAuditLogs(data.logs);
-            try {
-              localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(data.logs));
-            } catch {}
-          }
+        const storedLogs = localStorage.getItem(DN_ADMIN_LOGS_KEY);
+        if (storedLogs) {
+          const parsedLogs = JSON.parse(storedLogs);
+          if (Array.isArray(parsedLogs)) setAuditLogs(parsedLogs);
+        }
+      } catch {}
+    };
+
+    loadFinances();
+
+    serverGetFinances()
+      .then((financeDB) => {
+        if (!isMounted || !financeDB) return;
+        if (financeDB.records) {
+          setIncomeRecords(financeDB.records);
+          try {
+            localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(financeDB.records));
+          } catch {}
+        }
+        if (financeDB.logs) {
+          setAuditLogs(financeDB.logs);
+          try {
+            localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(financeDB.logs));
+          } catch {}
         }
       })
-      .catch((err) => console.error("Error loading finances from DB:", err));
+      .catch((err) => console.error("Error syncing finances from DB:", err));
 
-    try {
-      const storedIncome = localStorage.getItem(DN_ADMIN_INCOME_KEY);
-      if (storedIncome) {
-        const parsed = JSON.parse(storedIncome);
-        if (Array.isArray(parsed)) {
-          // Filter out legacy dummy records so finance stays clean
-          const cleanRecords = parsed.filter(
-            (r: any) =>
-              r &&
-              typeof r.id === "string" &&
-              r.clientName !== "Barpeta Commercial Complex" &&
-              r.clientName !== "Dr. B. Sarma"
-          );
-          setIncomeRecords(cleanRecords);
-          localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(cleanRecords));
-        } else {
-          setIncomeRecords([]);
-          localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify([]));
-        }
-      } else {
-        setIncomeRecords([]);
-        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify([]));
-      }
-
-      const storedLogs = localStorage.getItem(DN_ADMIN_LOGS_KEY);
-      if (storedLogs) {
-        const parsedLogs = JSON.parse(storedLogs);
-        if (Array.isArray(parsedLogs)) {
-          // Filter out legacy dummy logs so history stays clean
-          const cleanLogs = parsedLogs.filter(
-            (l: any) =>
-              l &&
-              typeof l.id === "string" &&
-              !l.description?.includes("Barpeta Commercial Complex")
-          );
-          setAuditLogs(cleanLogs);
-          localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(cleanLogs));
-        } else {
-          setAuditLogs([]);
-          localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify([]));
-        }
-      } else {
-        setAuditLogs([]);
-        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify([]));
-      }
-    } catch {
-      setIncomeRecords([]);
-      setAuditLogs([]);
-    }
+    window.addEventListener("storage", loadFinances);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadFinances);
+    };
   }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError("");
-    try {
-      const savedEmail = (typeof window !== "undefined" ? localStorage.getItem("dn_admin_email") : null) || "admin@designnayan.com";
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: savedEmail, password: passcode }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setAuthError(data.error || "Incorrect passcode.");
-        return;
-      }
-      setIsAuthenticated(true);
-      localStorage.setItem(DN_ADMIN_AUTH_KEY, "true");
-      setAuthError("");
-    } catch {
-      setAuthError("Failed to authenticate with server.");
-    }
-  };
 
   // Synchronized Filter Logic (Dynamic search with category and time filter support)
   const {
@@ -256,39 +199,7 @@ export default function AllTransactionsPage() {
     const isoDate = new Date().toISOString();
 
     if (editingIncome) {
-      const updated = incomeRecords.map((r) =>
-        r.id === editingIncome.id
-          ? {
-              ...r,
-              amount: receivedAmount,
-              totalAmount: totalContractValue,
-              pendingAmount,
-              paymentStatus,
-              dueDate,
-              category,
-              clientName,
-              clientPhone,
-              projectDetails,
-              date,
-              paymentMethod,
-            }
-          : r
-      );
-      setIncomeRecords(updated);
-      localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
-
-      const newLog: IncomeAuditLog = {
-        id: `log_${Date.now()}`,
-        action: "EDITED",
-        description: `Updated ${clientName} (${category}): ${formatINR(receivedAmount)} collected, ${formatINR(pendingAmount)} pending`,
-        timestamp,
-        isoDate,
-      };
-      const updatedLogs = [newLog, ...auditLogs];
-      setAuditLogs(updatedLogs);
-      localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
-
-      const updatedRecord = {
+      const updatedRecord: IncomeRecord = {
         ...editingIncome,
         amount: receivedAmount,
         totalAmount: totalContractValue,
@@ -302,13 +213,31 @@ export default function AllTransactionsPage() {
         date,
         paymentMethod,
       };
-      fetch("/api/finances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ record: updatedRecord, log: newLog }),
-      }).catch((err) => console.error("Error updating transaction in DB:", err));
+      const updated = incomeRecords.map((r) =>
+        r.id === editingIncome.id ? updatedRecord : r
+      );
+      setIncomeRecords(updated);
+      try {
+        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
+      } catch {}
 
+      const newLog: IncomeAuditLog = {
+        id: `log_${Date.now()}`,
+        action: "EDITED",
+        description: `Updated ${clientName} (${category}): ${formatINR(receivedAmount)} collected, ${formatINR(pendingAmount)} pending`,
+        timestamp,
+        isoDate,
+      };
+      const updatedLogs = [newLog, ...auditLogs];
+      setAuditLogs(updatedLogs);
+      try {
+        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
+      } catch {}
+
+      serverUpsertFinancialRecord(updatedRecord, newLog).catch((err) =>
+        console.error("Error saving transaction to DB:", err)
+      );
+      window.dispatchEvent(new Event("storage"));
       showToast(`Updated transaction for ${clientName}`);
     } else {
       const newRec: IncomeRecord = {
@@ -328,7 +257,9 @@ export default function AllTransactionsPage() {
       };
       const updated = [newRec, ...incomeRecords];
       setIncomeRecords(updated);
-      localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
+      try {
+        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
+      } catch {}
 
       const newLog: IncomeAuditLog = {
         id: `log_${Date.now()}`,
@@ -339,15 +270,14 @@ export default function AllTransactionsPage() {
       };
       const updatedLogs = [newLog, ...auditLogs];
       setAuditLogs(updatedLogs);
-      localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
+      try {
+        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
+      } catch {}
 
-      fetch("/api/finances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ record: newRec, log: newLog }),
-      }).catch((err) => console.error("Error creating transaction in DB:", err));
-
+      serverUpsertFinancialRecord(newRec, newLog).catch((err) =>
+        console.error("Error creating transaction in DB:", err)
+      );
+      window.dispatchEvent(new Event("storage"));
       showToast(`Logged transaction for ${clientName}`);
     }
 
@@ -360,7 +290,9 @@ export default function AllTransactionsPage() {
     if (confirm(`Delete transaction of ${formatINR(record.amount)} from ${record.clientName}?`)) {
       const updated = incomeRecords.filter((r) => r.id !== record.id);
       setIncomeRecords(updated);
-      localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
+      try {
+        localStorage.setItem(DN_ADMIN_INCOME_KEY, JSON.stringify(updated));
+      } catch {}
 
       const timestamp = getFormattedDateTime();
       const isoDate = new Date().toISOString();
@@ -373,14 +305,14 @@ export default function AllTransactionsPage() {
       };
       const updatedLogs = [newLog, ...auditLogs];
       setAuditLogs(updatedLogs);
-      localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
+      try {
+        localStorage.setItem(DN_ADMIN_LOGS_KEY, JSON.stringify(updatedLogs));
+      } catch {}
 
-      fetch("/api/finances", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id: record.id, log: newLog }),
-      }).catch((err) => console.error("Error deleting transaction in DB:", err));
+      serverDeleteFinancialRecord(record.id, newLog).catch((err) =>
+        console.error("Error deleting transaction from DB:", err)
+      );
+      window.dispatchEvent(new Event("storage"));
 
       if (viewingDetail?.id === record.id) {
         setViewingDetail(null);
@@ -388,57 +320,6 @@ export default function AllTransactionsPage() {
       showToast(`Deleted transaction for ${record.clientName}`);
     }
   };
-
-  // Lock screen if unauthenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white/80 backdrop-blur-xl border border-stone-200/60 rounded-3xl p-8 shadow-sm space-y-6">
-          <div className="w-12 h-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-700 mx-auto">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div className="text-center space-y-1">
-            <h1 className="text-xl font-bold text-stone-900 tracking-tight">Protected Ledger</h1>
-            <p className="text-stone-500 text-xs">Enter your owner passcode to view all transactions</p>
-          </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <div className="relative">
-                <input
-                  type={showPasscode ? "text" : "password"}
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter admin passcode"
-                  className="w-full pl-4 pr-11 py-3 rounded-2xl bg-stone-50 border border-stone-200/80 text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 transition-all"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasscode(!showPasscode)}
-                  aria-label={showPasscode ? "Hide passcode" : "Show passcode"}
-                  className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
-                >
-                  {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {authError && <p className="text-rose-600 text-xs mt-1.5">{authError}</p>}
-            </div>
-            <button
-              type="submit"
-              className="w-full py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white font-semibold text-sm transition-all shadow-sm cursor-pointer"
-            >
-              Unlock Ledger
-            </button>
-          </form>
-          <div className="text-center">
-            <Link href="/admin" className="text-xs text-stone-500 hover:text-stone-900 transition-colors font-medium">
-              &larr; Return to Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#faf9f6] text-stone-900 font-sans selection:bg-stone-200 selection:text-stone-900 antialiased">

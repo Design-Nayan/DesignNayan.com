@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Star, ChevronLeft, ChevronRight, MessageSquareQuote, ArrowRight } from "lucide-react";
 import { testimonialsData } from "../data/testimonials.data";
 import { TestimonialItem } from "../types/testimonials.types";
+import { getTestimonialsFromDB } from "@/lib/db-service";
 import { cn } from "@/lib/utils";
 
 export function TestimonialsSection() {
@@ -18,7 +19,7 @@ export function TestimonialsSection() {
         const saved = localStorage.getItem("dn_testimonials");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setTestimonialsList(parsed);
           }
         }
@@ -27,17 +28,14 @@ export function TestimonialsSection() {
 
     loadFromStorage();
 
-    fetch("/api/testimonials", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
-          setTestimonialsList(json.data);
-          try {
-            localStorage.setItem("dn_testimonials", JSON.stringify(json.data));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live testimonials:", err));
+    getTestimonialsFromDB().then((dbList) => {
+      if (dbList) {
+        setTestimonialsList(dbList);
+        try {
+          localStorage.setItem("dn_testimonials", JSON.stringify(dbList));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadFromStorage);
     return () => window.removeEventListener("storage", loadFromStorage);

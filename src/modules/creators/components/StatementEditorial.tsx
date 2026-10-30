@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import { Creator } from "../creators.types";
 import { TopCreatorsPyramid } from "./TopCreatorsPyramid";
 import { getTopCreators } from "../data";
+import { getSiteSettingsFromDB } from "@/lib/db-service";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -24,6 +25,7 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
   );
 
   React.useEffect(() => {
+    let isMounted = true;
     const resolveTop = () => {
       try {
         const stored = localStorage.getItem("dn_top_creators");
@@ -42,8 +44,21 @@ export function StatementEditorial({ creators, onSelectCreator }: StatementEdito
     };
 
     resolveTop();
+
+    getSiteSettingsFromDB().then((settings) => {
+      if (isMounted && Array.isArray(settings?.topCreatorIds) && settings.topCreatorIds.length > 0) {
+        setTopSpotlightCreators(getTopCreators(creators, settings.topCreatorIds));
+        try {
+          localStorage.setItem("dn_top_creators", JSON.stringify(settings.topCreatorIds));
+        } catch {}
+      }
+    });
+
     window.addEventListener("storage", resolveTop);
-    return () => window.removeEventListener("storage", resolveTop);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", resolveTop);
+    };
   }, [creators]);
 
   useGSAP(

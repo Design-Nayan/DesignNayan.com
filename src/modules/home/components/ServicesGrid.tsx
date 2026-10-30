@@ -31,6 +31,7 @@ import {
 import { allServices, serviceCategories, ServiceItem } from "../data/home.data";
 import { StudioServiceDetail } from "@/modules/studio/types/studio.types";
 import { BuildServiceDetail } from "@/modules/build/types/build.types";
+import { getStudioServicesFromDB, getBuildServicesFromDB } from "@/lib/db-service";
 import { cn } from "@/lib/utils";
 
 interface ServicesGridProps {
@@ -173,29 +174,37 @@ export function ServicesGrid({ isFullPage = false }: ServicesGridProps) {
 
     loadFromLocalStorage();
 
-    // Live Database Sync: fetch updated services from PostgreSQL
-    fetch("/api/services", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.success) {
-          const studio = Array.isArray(data.studio) && data.studio.length > 0 ? data.studio : null;
-          const build = Array.isArray(data.build) && data.build.length > 0 ? data.build : null;
-          if (studio || build) {
-            setServicesList(computeActiveServices(studio, build));
-            if (studio) {
-              try {
-                localStorage.setItem("dn_studio_services", JSON.stringify(studio));
-              } catch {}
-            }
-            if (build) {
-              try {
-                localStorage.setItem("dn_build_services", JSON.stringify(build));
-              } catch {}
-            }
-          }
+    Promise.all([getStudioServicesFromDB(), getBuildServicesFromDB()]).then(([dbStudio, dbBuild]) => {
+      let updatedStudio = null;
+      let updatedBuild = null;
+      if (dbStudio) {
+        updatedStudio = dbStudio;
+        try {
+          localStorage.setItem("dn_studio_services", JSON.stringify(dbStudio));
+        } catch {}
+      }
+      if (dbBuild) {
+        updatedBuild = dbBuild;
+        try {
+          localStorage.setItem("dn_build_services", JSON.stringify(dbBuild));
+        } catch {}
+      }
+      if (updatedStudio || updatedBuild) {
+        if (!updatedStudio) {
+          try {
+            const raw = localStorage.getItem("dn_studio_services");
+            if (raw) updatedStudio = JSON.parse(raw);
+          } catch {}
         }
-      })
-      .catch((err) => console.warn("Failed to fetch live services:", err));
+        if (!updatedBuild) {
+          try {
+            const raw = localStorage.getItem("dn_build_services");
+            if (raw) updatedBuild = JSON.parse(raw);
+          } catch {}
+        }
+        setServicesList(computeActiveServices(updatedStudio, updatedBuild));
+      }
+    });
 
     window.addEventListener("storage", loadFromLocalStorage);
     return () => window.removeEventListener("storage", loadFromLocalStorage);

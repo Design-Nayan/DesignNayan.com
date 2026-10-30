@@ -28,6 +28,7 @@ import {
   RentalProperty 
 } from "../data/stay.data";
 import { cn } from "@/lib/utils";
+import { getStayRentalsFromDB, getStayHotelsFromDB } from "@/lib/db-service";
 
 export function StayView() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,18 +42,41 @@ export function StayView() {
   const [hotelsList, setHotelsList] = useState<StayProperty[]>(vacationHomesAndHotels);
 
   React.useEffect(() => {
-    try {
-      const savedRentals = localStorage.getItem("dn_stay_rentals");
-      if (savedRentals) {
-        const parsed = JSON.parse(savedRentals);
-        if (Array.isArray(parsed) && parsed.length > 0) setRentalsList(parsed);
+    let isMounted = true;
+    const loadFromStorage = () => {
+      try {
+        const savedRentals = localStorage.getItem("dn_stay_rentals");
+        if (savedRentals) {
+          const parsed = JSON.parse(savedRentals);
+          if (Array.isArray(parsed)) setRentalsList(parsed);
+        }
+        const savedHotels = localStorage.getItem("dn_stay_hotels");
+        if (savedHotels) {
+          const parsed = JSON.parse(savedHotels);
+          if (Array.isArray(parsed)) setHotelsList(parsed);
+        }
+      } catch {}
+    };
+
+    loadFromStorage();
+    window.addEventListener("storage", loadFromStorage);
+
+    Promise.all([getStayRentalsFromDB(), getStayHotelsFromDB()]).then(([dbRentals, dbHotels]) => {
+      if (!isMounted) return;
+      if (dbRentals !== null) {
+        setRentalsList(dbRentals);
+        try { localStorage.setItem("dn_stay_rentals", JSON.stringify(dbRentals)); } catch {}
       }
-      const savedHotels = localStorage.getItem("dn_stay_hotels");
-      if (savedHotels) {
-        const parsed = JSON.parse(savedHotels);
-        if (Array.isArray(parsed) && parsed.length > 0) setHotelsList(parsed);
+      if (dbHotels !== null) {
+        setHotelsList(dbHotels);
+        try { localStorage.setItem("dn_stay_hotels", JSON.stringify(dbHotels)); } catch {}
       }
-    } catch {}
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadFromStorage);
+    };
   }, []);
 
   // Ensure horizontal containers always start at the first card on load or updates

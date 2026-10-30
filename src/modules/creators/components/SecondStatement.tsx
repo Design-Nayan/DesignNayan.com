@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import Image from "next/image";
 import { Play, ArrowUpRight, CheckCircle2, Film } from "lucide-react";
 import { Creator } from "../creators.types";
@@ -28,7 +28,21 @@ export function SecondStatement({
   onBookRoster,
 }: SecondStatementProps) {
   // Duplicate the list so the infinite marquee loops seamlessly from right to left
-  const marqueeList = [...SHOWCASE_VIDEOS, ...SHOWCASE_VIDEOS];
+  const marqueeList = useMemo(() => {
+    const enriched = SHOWCASE_VIDEOS.map((item) => {
+      const live = creators.find((c) => c.id === item.creatorId);
+      if (live) {
+        return {
+          ...item,
+          creatorName: live.name,
+          role: live.role,
+          thumbnail: live.featuredImage || item.thumbnail,
+        };
+      }
+      return item;
+    });
+    return [...enriched, ...enriched];
+  }, [creators]);
 
   const handleCardClick = (creatorId: string) => {
     const found = creators.find((c) => c.id === creatorId);

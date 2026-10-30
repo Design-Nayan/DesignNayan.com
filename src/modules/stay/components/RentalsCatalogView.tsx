@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { rentalPropertiesNearYou, stayLocations, RentalProperty } from "../data/stay.data";
 import { cn } from "@/lib/utils";
+import { getStayRentalsFromDB } from "@/lib/db-service";
 
 export function RentalsCatalogView() {
   const searchParams = useSearchParams();
@@ -55,13 +56,31 @@ export function RentalsCatalogView() {
   const [rentalsList, setRentalsList] = useState<RentalProperty[]>(rentalPropertiesNearYou);
 
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dn_stay_rentals");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setRentalsList(parsed);
+    let isMounted = true;
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem("dn_stay_rentals");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setRentalsList(parsed);
+        }
+      } catch {}
+    };
+
+    loadFromStorage();
+    window.addEventListener("storage", loadFromStorage);
+
+    getStayRentalsFromDB().then((dbRentals) => {
+      if (isMounted && dbRentals !== null) {
+        setRentalsList(dbRentals);
+        try { localStorage.setItem("dn_stay_rentals", JSON.stringify(dbRentals)); } catch {}
       }
-    } catch {}
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadFromStorage);
+    };
   }, []);
 
   const propertyTypes = ["ALL", "3 BHK Apartment", "2 BHK Builder Floor", "4 BHK Luxury Villa", "Duplex Penthouse"];

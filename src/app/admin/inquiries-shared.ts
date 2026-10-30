@@ -41,6 +41,8 @@ export function saveStoredInquiries(inquiries: InquiryRecord[]): void {
   } catch {}
 }
 
+import { createInquiryInDB } from "@/lib/db-service";
+
 export function addInquiry(
   inquiry: Omit<InquiryRecord, "id" | "status" | "date"> & {
     id?: string;
@@ -63,5 +65,11 @@ export function addInquiry(
   };
   const updated = [newRecord, ...current];
   saveStoredInquiries(updated);
+
+  // Directly persist to Supabase database
+  createInquiryInDB(newRecord).catch((err) => {
+    console.error("Failed to sync inquiry to Supabase:", err);
+  });
+
   return newRecord;
 }

@@ -49,9 +49,11 @@ export const TOP_CREATORS_SPOTLIGHT: TopCreatorSpotlight[] = [
  * If an admin customizes `TOP_CREATORS_SPOTLIGHT`, this ensures the frontend displays them in exact rank order.
  */
 export function getTopCreators(
-  customRoster: Creator[] = CREATORS_DATA,
+  customRoster: Creator[],
   customSpotlightIds?: string[]
 ): Creator[] {
+  if (!customRoster || customRoster.length === 0) return [];
+
   const spotlightIds =
     customSpotlightIds && customSpotlightIds.length > 0
       ? customSpotlightIds
@@ -66,7 +68,7 @@ export function getTopCreators(
     }
   }
 
-  // Fallback: if spotlight has fewer than 5 or invalid IDs, backfill from master list
+  // Backfill only from the active customRoster (do not resurrect deleted creators)
   if (resolved.length < 5) {
     for (const c of customRoster) {
       if (!resolved.some((r) => r.id === c.id)) {

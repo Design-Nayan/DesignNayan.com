@@ -22,6 +22,8 @@ import { CampaignRosterBar } from "./components/CampaignRosterBar";
 import { CampaignBookingModal } from "./components/CampaignBookingModal";
 import { CreatorRegistrationModal } from "./components/CreatorRegistrationModal";
 
+import { getCreatorsFromDB } from "@/lib/db-service";
+
 export function CreatorsView() {
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
   const [quickViewCreator, setQuickViewCreator] = useState<Creator | null>(null);
@@ -31,23 +33,35 @@ export function CreatorsView() {
   const lenisRef = React.useRef<Lenis | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadCreators = () => {
       const saved = localStorage.getItem("dn_creators");
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setAllCreators([...parsed]);
-            return;
           }
         } catch {}
       }
-      setAllCreators([...CREATORS_DATA]);
     };
 
     loadCreators();
     window.addEventListener("storage", loadCreators);
-    return () => window.removeEventListener("storage", loadCreators);
+
+    getCreatorsFromDB().then((dbData) => {
+      if (isMounted && dbData !== null) {
+        setAllCreators(dbData);
+        try {
+          localStorage.setItem("dn_creators", JSON.stringify(dbData));
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadCreators);
+    };
   }, []);
 
   useEffect(() => {
@@ -195,7 +209,11 @@ export function CreatorsView() {
 
       {/* 9. Creator Quick View & Showreel Modal */}
       <CreatorProfileModal
-        creator={quickViewCreator}
+        creator={
+          quickViewCreator
+            ? (allCreators.find((c) => c.id === quickViewCreator.id) || quickViewCreator)
+            : null
+        }
         isSelected={
           quickViewCreator
             ? selectedCreatorIds.includes(quickViewCreator.id)

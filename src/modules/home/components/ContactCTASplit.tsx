@@ -5,34 +5,37 @@ import Link from "next/link";
 import { ArrowRight, Phone, Mail, MapPin, MessageSquare } from "lucide-react";
 import { initialContactData } from "@/modules/contact/data/contact.data";
 import { ContactDetailsData } from "@/modules/contact/types/contact.types";
+import { getSiteSettingsFromDB } from "@/lib/db-service";
 
 export function ContactCTASplit() {
   const [contact, setContact] = useState<ContactDetailsData>(initialContactData);
 
   useEffect(() => {
-    // 1. Instant local restore
-    try {
-      const saved = localStorage.getItem("dn_contact_details");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === "object") {
-          setContact((prev) => ({ ...prev, ...parsed }));
+    const loadContact = () => {
+      try {
+        const saved = localStorage.getItem("dn_contact_details");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            setContact((prev) => ({ ...prev, ...parsed }));
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    };
 
-    // 2. Live database sync from PostgreSQL
-    fetch("/api/contact-info", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((resData) => {
-        if (resData?.success && resData?.data) {
-          setContact(resData.data);
-          try {
-            localStorage.setItem("dn_contact_details", JSON.stringify(resData.data));
-          } catch {}
-        }
-      })
-      .catch(() => {});
+    loadContact();
+
+    getSiteSettingsFromDB().then((settings) => {
+      if (settings?.contact) {
+        setContact((prev) => ({ ...prev, ...settings.contact }));
+        try {
+          localStorage.setItem("dn_contact_details", JSON.stringify(settings.contact));
+        } catch {}
+      }
+    });
+
+    window.addEventListener("storage", loadContact);
+    return () => window.removeEventListener("storage", loadContact);
   }, []);
 
   return (

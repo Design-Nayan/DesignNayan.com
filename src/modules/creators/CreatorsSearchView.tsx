@@ -23,6 +23,7 @@ import { Creator, CreatorCategory, DeliverableFormat, ReachTier } from "./creato
 import { CreatorProfileModal } from "./components/CreatorProfileModal";
 import { CampaignRosterBar } from "./components/CampaignRosterBar";
 import { CampaignBookingModal } from "./components/CampaignBookingModal";
+import { getCreatorsFromDB } from "@/lib/db-service";
 
 const ALL_FILTER_CATEGORIES: CreatorCategory[] = [
   "All",
@@ -129,32 +130,56 @@ export function CreatorsSearchView() {
   const [allCreators, setAllCreators] = useState<Creator[]>(CREATORS_DATA);
 
   useEffect(() => {
-    const saved = localStorage.getItem("dn_creators");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const migrated = parsed.map((c: Creator) => {
-            let startingRate = c.startingRate || "₹15,000";
-            if (startingRate.includes("$")) {
-              const num = parseInt(startingRate.replace(/[^0-9]/g, ""), 10);
-              startingRate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
-            }
-            const packages = (c.packages || []).map((pkg) => {
-              let priceEstimate = pkg.priceEstimate || "";
-              if (priceEstimate.includes("$")) {
-                const num = parseInt(priceEstimate.replace(/[^0-9]/g, ""), 10);
-                priceEstimate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
-              }
-              return { ...pkg, priceEstimate };
-            });
-            return { ...c, startingRate, packages };
-          });
-          setAllCreators(migrated);
-          localStorage.setItem("dn_creators", JSON.stringify(migrated));
+    let isMounted = true;
+    const processCreators = (list: Creator[]) => {
+      return list.map((c: Creator) => {
+        let startingRate = c.startingRate || "₹15,000";
+        if (startingRate.includes("$")) {
+          const num = parseInt(startingRate.replace(/[^0-9]/g, ""), 10);
+          startingRate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
         }
-      } catch {}
-    }
+        const packages = (c.packages || []).map((pkg) => {
+          let priceEstimate = pkg.priceEstimate || "";
+          if (priceEstimate.includes("$")) {
+            const num = parseInt(priceEstimate.replace(/[^0-9]/g, ""), 10);
+            priceEstimate = `₹${(num >= 1000 ? num * 10 : num * 100).toLocaleString("en-IN")}`;
+          }
+          return { ...pkg, priceEstimate };
+        });
+        return { ...c, startingRate, packages };
+      });
+    };
+
+    const loadCreators = () => {
+      const saved = localStorage.getItem("dn_creators");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const migrated = processCreators(parsed);
+            setAllCreators(migrated);
+          }
+        } catch {}
+      }
+    };
+
+    loadCreators();
+    window.addEventListener("storage", loadCreators);
+
+    getCreatorsFromDB().then((dbData) => {
+      if (isMounted && dbData !== null) {
+        const migrated = processCreators(dbData);
+        setAllCreators(migrated);
+        try {
+          localStorage.setItem("dn_creators", JSON.stringify(dbData));
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadCreators);
+    };
   }, []);
 
   const filterPopoverRef = useRef<HTMLDivElement>(null);
@@ -871,7 +896,11 @@ export function CreatorsSearchView() {
 
       {/* Creator Quick View & Showreel Modal */}
       <CreatorProfileModal
-        creator={quickViewCreator}
+        creator={
+          quickViewCreator
+            ? (allCreators.find((c) => c.id === quickViewCreator.id) || quickViewCreator)
+            : null
+        }
         isSelected={
           quickViewCreator
             ? selectedCreatorIds.includes(quickViewCreator.id)

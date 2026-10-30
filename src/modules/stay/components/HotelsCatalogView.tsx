@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { vacationHomesAndHotels, stayLocations, StayProperty } from "../data/stay.data";
 import { cn } from "@/lib/utils";
+import { getStayHotelsFromDB } from "@/lib/db-service";
 
 export function HotelsCatalogView() {
   const searchParams = useSearchParams();
@@ -56,13 +57,31 @@ export function HotelsCatalogView() {
   const [hotelsList, setHotelsList] = useState<StayProperty[]>(vacationHomesAndHotels);
 
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dn_stay_hotels");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) setHotelsList(parsed);
+    let isMounted = true;
+    const loadFromStorage = () => {
+      try {
+        const saved = localStorage.getItem("dn_stay_hotels");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setHotelsList(parsed);
+        }
+      } catch {}
+    };
+
+    loadFromStorage();
+    window.addEventListener("storage", loadFromStorage);
+
+    getStayHotelsFromDB().then((dbHotels) => {
+      if (isMounted && dbHotels !== null) {
+        setHotelsList(dbHotels);
+        try { localStorage.setItem("dn_stay_hotels", JSON.stringify(dbHotels)); } catch {}
       }
-    } catch {}
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadFromStorage);
+    };
   }, []);
 
   const categories = ["ALL", "Vacation Home", "Boutique Hotel", "Luxury Resort", "Architectural Homestay"];

@@ -71,22 +71,6 @@ export function CreatorRegistrationModal({
         date: "Just now",
       });
 
-      // 2. Also log to backend contact API route as fallback/persistent record
-      try {
-        await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: `${formData.name} (${formData.platform}: ${formData.handle})`,
-            email: formData.email,
-            company: `${formData.phone} | ${formData.platform}: ${formData.handle}`,
-            serviceRequested: `Creator Registration • ${formData.category}`,
-            budgetRange: formData.reachTier,
-            message: `Platform: ${formData.platform} | Handle: ${formData.handle} | Rate: ${formData.rate} | Portfolio: ${formData.portfolioLink} | Notes: ${formData.message}`,
-          }),
-        });
-      } catch {}
-
       setSubmitted(true);
     } catch (err) {
       console.error("Error submitting creator registration:", err);

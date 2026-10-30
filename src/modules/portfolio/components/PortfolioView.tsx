@@ -23,6 +23,7 @@ import { ProjectModal } from "@/modules/projects/components/ProjectModal";
 import { InteractiveDotGrid } from "./InteractiveDotGrid";
 import { PortfolioMotionColumns } from "./PortfolioMotionColumns";
 import { cn } from "@/lib/utils";
+import { getProjectsFromDB } from "@/lib/db-service";
 
 // Batched animated metric counter hook for ultra-smooth luxury numbers with a single RAF loop
 function useAnimatedMetrics(
@@ -185,12 +186,13 @@ export function PortfolioView() {
   const [projectsList, setProjectsList] = useState<ProjectItem[]>(projectsData);
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = () => {
       try {
         const saved = localStorage.getItem("dn_projects");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setProjectsList(parsed);
           }
         }
@@ -198,22 +200,21 @@ export function PortfolioView() {
     };
 
     loadData();
-
-    // Fetch live from database so all visitors and reloads receive the owner's updates
-    fetch("/api/projects")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
-          setProjectsList(json.data);
-          try {
-            localStorage.setItem("dn_projects", JSON.stringify(json.data));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live portfolio projects:", err));
-
     window.addEventListener("storage", loadData);
-    return () => window.removeEventListener("storage", loadData);
+
+    getProjectsFromDB().then((dbData) => {
+      if (isMounted && dbData !== null) {
+        setProjectsList(dbData);
+        try {
+          localStorage.setItem("dn_projects", JSON.stringify(dbData));
+        } catch {}
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadData);
+    };
   }, []);
 
   // Dynamically derive stats directly from uploaded portfolio projects

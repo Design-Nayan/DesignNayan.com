@@ -24,6 +24,7 @@ import {
 import dynamic from "next/dynamic";
 import { buildServicesData, materialCategoriesData, buildWorkflowSteps } from "../data/build.data";
 import { BuildServiceDetail, MaterialCategory } from "../types/build.types";
+import { getBuildServicesFromDB, getMaterialsFromDB } from "@/lib/db-service";
 
 const BuildHeroCanvas = dynamic(
   () => import("./BuildHeroCanvas").then((mod) => mod.BuildHeroCanvas),
@@ -44,7 +45,7 @@ export function BuildView() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setServices(parsed);
           }
         } catch {}
@@ -54,7 +55,7 @@ export function BuildView() {
       if (savedMaterials) {
         try {
           const parsedMaterials = JSON.parse(savedMaterials);
-          if (Array.isArray(parsedMaterials) && parsedMaterials.length > 0) {
+          if (Array.isArray(parsedMaterials)) {
             setMaterials(parsedMaterials);
           }
         } catch {}
@@ -63,18 +64,23 @@ export function BuildView() {
 
     loadSaved();
 
-    // Fetch live from database
-    fetch("/api/services", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.success && Array.isArray(data.build) && data.build.length > 0) {
-          setServices(data.build);
-          try {
-            localStorage.setItem("dn_build_services", JSON.stringify(data.build));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live build services:", err));
+    getBuildServicesFromDB().then((dbServices) => {
+      if (dbServices) {
+        setServices(dbServices);
+        try {
+          localStorage.setItem("dn_build_services", JSON.stringify(dbServices));
+        } catch {}
+      }
+    });
+
+    getMaterialsFromDB().then((dbMaterials) => {
+      if (dbMaterials) {
+        setMaterials(dbMaterials);
+        try {
+          localStorage.setItem("dn_build_materials", JSON.stringify(dbMaterials));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadSaved);
     return () => window.removeEventListener("storage", loadSaved);

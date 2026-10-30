@@ -35,6 +35,7 @@ import {
 import dynamic from "next/dynamic";
 import { studioServicesData } from "../data/studio.data";
 import { StudioServiceDetail } from "../types/studio.types";
+import { getStudioServicesFromDB } from "@/lib/db-service";
 
 const StudioInteractiveCanvas = dynamic(
   () => import("./StudioInteractiveCanvas").then((mod) => mod.StudioInteractiveCanvas),
@@ -126,7 +127,7 @@ export function StudioView() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setServices(parsed);
           }
         } catch {}
@@ -135,18 +136,14 @@ export function StudioView() {
 
     loadSaved();
 
-    // Fetch live from database
-    fetch("/api/services", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.success && Array.isArray(data.studio) && data.studio.length > 0) {
-          setServices(data.studio);
-          try {
-            localStorage.setItem("dn_studio_services", JSON.stringify(data.studio));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live studio services:", err));
+    getStudioServicesFromDB().then((dbServices) => {
+      if (dbServices) {
+        setServices(dbServices);
+        try {
+          localStorage.setItem("dn_studio_services", JSON.stringify(dbServices));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadSaved);
     return () => window.removeEventListener("storage", loadSaved);

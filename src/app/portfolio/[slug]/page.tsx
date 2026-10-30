@@ -8,17 +8,18 @@ import {
   ArrowRight, 
   MessageSquare 
 } from "lucide-react";
-import { projectsData } from "@/modules/projects";
+import { projectsData, ProjectItem } from "@/modules/projects";
+import { getProjectsFromDB } from "@/lib/db-service";
 
-export async function generateStaticParams() {
-  return projectsData.map((project) => ({
-    slug: project.slug,
-  }));
+async function getProjectBySlug(slug: string): Promise<ProjectItem | null> {
+  const dbProjects = await getProjectsFromDB();
+  const list = dbProjects ?? projectsData;
+  return list.find((p) => p.slug === slug) || projectsData.find((p) => p.slug === slug) || null;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const project = projectsData.find((p) => p.slug === slug);
+  const project = await getProjectBySlug(slug);
   if (!project) return { title: "Project Not Found" };
 
   return {
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const project = projectsData.find((p) => p.slug === slug);
+  const project = await getProjectBySlug(slug);
 
   if (!project) {
     notFound();

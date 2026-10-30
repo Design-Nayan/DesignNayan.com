@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { partnerBrandsData } from "../data/brands.data";
 import { PartnerBrand } from "../types/brands.types";
+import { getPartnerBrandsFromDB } from "@/lib/db-service";
 
 export function BrandLogosMarquee() {
   const [brandsList, setBrandsList] = useState<PartnerBrand[]>(partnerBrandsData);
@@ -13,7 +14,7 @@ export function BrandLogosMarquee() {
         const saved = localStorage.getItem("dn_partner_brands");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setBrandsList(parsed);
           }
         }
@@ -22,17 +23,14 @@ export function BrandLogosMarquee() {
 
     loadFromStorage();
 
-    fetch("/api/brands", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
-          setBrandsList(json.data);
-          try {
-            localStorage.setItem("dn_partner_brands", JSON.stringify(json.data));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live partner brands:", err));
+    getPartnerBrandsFromDB().then((dbBrands) => {
+      if (dbBrands) {
+        setBrandsList(dbBrands);
+        try {
+          localStorage.setItem("dn_partner_brands", JSON.stringify(dbBrands));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadFromStorage);
     return () => window.removeEventListener("storage", loadFromStorage);

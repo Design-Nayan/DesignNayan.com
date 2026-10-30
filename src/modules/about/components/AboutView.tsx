@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { CheckCircle2, Play } from "lucide-react";
 import { initialAboutData } from "../data/about.data";
 import { AboutPageData } from "../types/about.types";
+import { getSiteSettingsFromDB } from "@/lib/db-service";
 
 const isVideoUrl = (url?: string): boolean => {
   if (!url) return false;
@@ -79,20 +80,14 @@ export function AboutView() {
 
     loadData();
 
-    // Fetch live from database with no-store cache so all visitors see updates immediately
-    fetch("/api/about", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.success && json?.data) {
-          const merged = mergeData(json.data);
-          setData(merged);
-          setMediaError(false);
-          try {
-            localStorage.setItem("dn_about_data", JSON.stringify(merged));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live about data:", err));
+    getSiteSettingsFromDB().then((settings) => {
+      if (settings?.about) {
+        setData(mergeData(settings.about));
+        try {
+          localStorage.setItem("dn_about_data", JSON.stringify(settings.about));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadData);
     return () => window.removeEventListener("storage", loadData);

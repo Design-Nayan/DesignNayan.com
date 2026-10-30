@@ -22,10 +22,11 @@ export function CampaignRosterBar({
   const totalReachFormatted = React.useMemo(() => {
     let total = 0;
     selectedCreators.forEach((c) => {
-      if (c.followersCount.includes("M")) {
-        total += parseFloat(c.followersCount) * 1000000;
-      } else if (c.followersCount.includes("K")) {
-        total += parseFloat(c.followersCount) * 1000;
+      const reach = (c.followersCount || "0K").toUpperCase();
+      if (reach.includes("M")) {
+        total += (parseFloat(reach) || 0) * 1000000;
+      } else if (reach.includes("K")) {
+        total += (parseFloat(reach) || 0) * 1000;
       }
     });
 
@@ -37,7 +38,7 @@ export function CampaignRosterBar({
 
   // Average Engagement
   const avgEngagement = (
-    selectedCreators.reduce((acc, c) => acc + c.engagementRate, 0) /
+    selectedCreators.reduce((acc, c) => acc + (typeof c.engagementRate === "number" ? c.engagementRate : 5.0), 0) /
     selectedCreators.length
   ).toFixed(1);
 

@@ -7,6 +7,7 @@ import { ArrowRight, Menu, X, PhoneCall } from "lucide-react";
 import { mainNav } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/common/Logo";
+import { getSiteSettingsFromDB } from "@/lib/db-service";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -14,31 +15,38 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCreators = pathname?.startsWith("/creators");
 
-  const [whatsappUrl, setWhatsappUrl] = useState(siteConfig.contact.whatsapp);
-  const [phoneDisplay, setPhoneDisplay] = useState(siteConfig.contact.phoneDisplay);
-  const [phoneRaw, setPhoneRaw] = useState(siteConfig.contact.phone);
+  const [whatsappUrl, setWhatsappUrl] = useState<string>(siteConfig.contact.whatsapp);
+  const [phoneDisplay, setPhoneDisplay] = useState<string>(siteConfig.contact.phoneDisplay);
+  const [phoneRaw, setPhoneRaw] = useState<string>(siteConfig.contact.phone);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dn_contact_details");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed?.whatsapp) setWhatsappUrl(parsed.whatsapp);
-        if (parsed?.phoneDisplay) setPhoneDisplay(parsed.phoneDisplay);
-        if (parsed?.phone) setPhoneRaw(parsed.phone);
-      }
-    } catch {}
-
-    fetch("/api/contact-info", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((resData) => {
-        if (resData?.success && resData?.data) {
-          if (resData.data.whatsapp) setWhatsappUrl(resData.data.whatsapp);
-          if (resData.data.phoneDisplay) setPhoneDisplay(resData.data.phoneDisplay);
-          if (resData.data.phone) setPhoneRaw(resData.data.phone);
+    const loadContact = () => {
+      try {
+        const saved = localStorage.getItem("dn_contact_details");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.whatsapp) setWhatsappUrl(parsed.whatsapp);
+          if (parsed?.phoneDisplay) setPhoneDisplay(parsed.phoneDisplay);
+          if (parsed?.phone) setPhoneRaw(parsed.phone);
         }
-      })
-      .catch(() => {});
+      } catch {}
+    };
+
+    loadContact();
+
+    getSiteSettingsFromDB().then((settings) => {
+      if (settings?.contact) {
+        if (settings.contact.whatsapp) setWhatsappUrl(settings.contact.whatsapp);
+        if (settings.contact.phoneDisplay) setPhoneDisplay(settings.contact.phoneDisplay);
+        if (settings.contact.phone) setPhoneRaw(settings.contact.phone);
+        try {
+          localStorage.setItem("dn_contact_details", JSON.stringify(settings.contact));
+        } catch {}
+      }
+    });
+
+    window.addEventListener("storage", loadContact);
+    return () => window.removeEventListener("storage", loadContact);
   }, []);
 
   return (

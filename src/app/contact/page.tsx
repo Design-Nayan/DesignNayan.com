@@ -4,35 +4,38 @@ import React, { useState, useEffect } from "react";
 import { initialContactData } from "@/modules/contact/data/contact.data";
 import { ContactDetailsData } from "@/modules/contact/types/contact.types";
 import { addInquiry } from "@/app/admin/inquiries-shared";
+import { getSiteSettingsFromDB } from "@/lib/db-service";
 import { Phone, Mail, MapPin, Send, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {
   const [contactInfo, setContactInfo] = useState<ContactDetailsData>(initialContactData);
 
   useEffect(() => {
-    // 1. Instant local restore
-    try {
-      const saved = localStorage.getItem("dn_contact_details");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === "object") {
-          setContactInfo((prev) => ({ ...prev, ...parsed }));
+    const loadContact = () => {
+      try {
+        const saved = localStorage.getItem("dn_contact_details");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            setContactInfo((prev) => ({ ...prev, ...parsed }));
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    };
 
-    // 2. Live database fetch from PostgreSQL
-    fetch("/api/contact-info", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((resData) => {
-        if (resData?.success && resData?.data) {
-          setContactInfo(resData.data);
-          try {
-            localStorage.setItem("dn_contact_details", JSON.stringify(resData.data));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Notice: Contact page using fallback contact info:", err));
+    loadContact();
+
+    getSiteSettingsFromDB().then((settings) => {
+      if (settings?.contact) {
+        setContactInfo((prev) => ({ ...prev, ...settings.contact }));
+        try {
+          localStorage.setItem("dn_contact_details", JSON.stringify(settings.contact));
+        } catch {}
+      }
+    });
+
+    window.addEventListener("storage", loadContact);
+    return () => window.removeEventListener("storage", loadContact);
   }, []);
 
   const [formData, setFormData] = useState({
@@ -53,46 +56,23 @@ export default function ContactPage() {
     setLoading(true);
     setErrorMsg(null);
 
+    // Sync into shared inquiries storage for admin dashboard
     try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          serviceRequested: formData.serviceCategory,
-          budgetRange: formData.budget,
-          message: formData.message,
-        }),
+      addInquiry({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || "Not provided",
+        service: formData.serviceCategory,
+        budget: formData.budget,
+        message: formData.message,
+        location: "Assam / Online",
+        status: "NEW",
+        date: "Just now",
       });
+    } catch {}
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to submit project inquiry.");
-      }
-
-      // Sync into shared inquiries storage for admin dashboard
-      try {
-        addInquiry({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone || "Not provided",
-          service: formData.serviceCategory,
-          budget: formData.budget,
-          message: formData.message,
-          location: "Assam / Online",
-          status: "NEW",
-          date: "Just now",
-        });
-      } catch {}
-
-      setSubmitted(true);
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
+    setSubmitted(true);
+    setLoading(false);
   };
 
   return (

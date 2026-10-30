@@ -7,6 +7,7 @@ import { projectsData } from "../data/projects.data";
 import { ProjectItem } from "../types/projects.types";
 import { ProjectModal } from "./ProjectModal";
 import { cn } from "@/lib/utils";
+import { getProjectsFromDB } from "@/lib/db-service";
 
 export function RecentWorkCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -15,12 +16,13 @@ export function RecentWorkCarousel() {
   const [activeModalProject, setActiveModalProject] = useState<ProjectItem | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = () => {
       try {
         const saved = localStorage.getItem("dn_projects");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setProjectsList(parsed);
           }
         }
@@ -28,22 +30,20 @@ export function RecentWorkCarousel() {
     };
 
     loadData();
-
-    // Fetch live from database so homepage work carousel reflects owner's updates
-    fetch("/api/projects")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.success && Array.isArray(json?.data) && json.data.length > 0) {
-          setProjectsList(json.data);
-          try {
-            localStorage.setItem("dn_projects", JSON.stringify(json.data));
-          } catch {}
-        }
-      })
-      .catch((err) => console.warn("Failed to fetch live portfolio projects for carousel:", err));
+    getProjectsFromDB().then((dbProjects) => {
+      if (isMounted && dbProjects) {
+        setProjectsList(dbProjects);
+        try {
+          localStorage.setItem("dn_projects", JSON.stringify(dbProjects));
+        } catch {}
+      }
+    });
 
     window.addEventListener("storage", loadData);
-    return () => window.removeEventListener("storage", loadData);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("storage", loadData);
+    };
   }, []);
 
   // Ensure carousel always starts at the first card on load or when new projects are added

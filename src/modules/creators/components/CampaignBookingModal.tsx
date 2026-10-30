@@ -49,7 +49,7 @@ export function CampaignBookingModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       addInquiry({
@@ -64,6 +64,7 @@ export function CampaignBookingModal({
         date: "Just now",
       });
     } catch {}
+
     setSubmitted(true);
   };
 
